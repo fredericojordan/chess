@@ -19,17 +19,17 @@ class Board(list):
             
     def populate(self):
         for i in range(8):
-            self.putPiece(Pawn('black'), 0, i)
+            self.putPiece(Pawn('black'), 1, i)
             self.putPiece(Pawn('white'), -2, i)
             
-        self.putPiece(Rook('black'), 1, 0)
-        self.putPiece(Knight('black'), 1, 1)
-        self.putPiece(Bishop('black'), 1, 2)
-        self.putPiece(Queen('black'), 1, 3)
-        self.putPiece(King('black'), 1, 4)
-        self.putPiece(Bishop('black'), 1, 5)
-        self.putPiece(Knight('black'), 1, 6)
-        self.putPiece(Rook('black'), 1, 7)
+        self.putPiece(Rook('black'), 0, 0)
+        self.putPiece(Knight('black'), 0, 1)
+        self.putPiece(Bishop('black'), 0, 2)
+        self.putPiece(Queen('black'), 0, 3)
+        self.putPiece(King('black'), 0, 4)
+        self.putPiece(Bishop('black'), 0, 5)
+        self.putPiece(Knight('black'), 0, 6)
+        self.putPiece(Rook('black'), 0, 7)
         
         self.putPiece(Rook('white'), -1, 0)
         self.putPiece(Knight('white'), -1, 1)
@@ -45,4 +45,3 @@ class Board(list):
         
     def removePiece(self, row, col):
         self[row][col] = Board.EMPTY_BOX
-        
