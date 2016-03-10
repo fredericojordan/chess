@@ -1,6 +1,9 @@
 from pieces import Pawn, Knight, Bishop, Rook, Queen, King
 
 class Board(list):
+#     EMPTY_BOX = None
+    EMPTY_BOX = ''
+    
     def __init__(self):
         self.makeBoxes()
         self.populate()
@@ -8,7 +11,7 @@ class Board(list):
     def makeBoxes(self):
         del self[:]
         for _ in range(8):
-            self.append(['' for _ in range(8)])
+            self.append([Board.EMPTY_BOX for _ in range(8)])
     
     def _print(self):
         for row in self:
@@ -39,3 +42,7 @@ class Board(list):
             
     def putPiece(self, piece, row, col):
         self[row][col] = piece
+        
+    def removePiece(self, row, col):
+        self[row][col] = Board.EMPTY_BOX
+        
