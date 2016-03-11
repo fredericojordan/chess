@@ -47,6 +47,14 @@ class Pawn(Piece):
         if not Piece.isValidMove(self, inital_position, final_position, board):
             return False
         
+        if (self.isValidWalk(inital_position, final_position, board) or
+            self.isValidCapture(inital_position, final_position, board) ):
+            return True
+        else:
+            print('Invalid pawn move')
+            return False
+    
+    def isValidWalk(self, inital_position, final_position, board):
         d_row = final_position.row - inital_position.row
         d_col = final_position.col - inital_position.col
         
@@ -59,13 +67,22 @@ class Pawn(Piece):
                 if ( d_row == 1 or
                      (d_row == 2 and not self.hasMoved) ):
                     return True
-        
-        if abs(d_col) == 1:
-            pass # TODO: CAPTURING
-        
-        print('Invalid pawn move')
+
         return False
-            
+        
+    def isValidCapture(self,inital_position, final_position, board):
+        d_row = final_position.row - inital_position.row
+        d_col = final_position.col - inital_position.col
+        
+        if abs(d_col) == 1 and not board.isEmpty(final_position):
+            if (self.color == 'white' and
+                d_row == -1 and
+                board.getPiece(final_position).color == 'black'):
+                return True
+            if (self.color == 'black' and
+                d_row == 1 and
+                board.getPiece(final_position).color == 'white'):
+                return True            
 
 class Knight(Piece):
     def __init__(self, color):
