@@ -168,17 +168,53 @@ class King(Piece):
     def type(self):
         return 'k'
     
-    def isValidMove(self, inital_position, final_position, board):
-        if not Piece.isValidMove(self, inital_position, final_position, board):
+    def isValidMove(self, initial_position, final_position, board):
+        if not Piece.isValidMove(self, initial_position, final_position, board):
             return False
         
-        d_row = abs(final_position.row - inital_position.row)
-        d_col = abs(final_position.col - inital_position.col)
-        if ( d_row <= 1 or
-             d_col <= 1 ):
+        d_row = final_position.row - initial_position.row
+        d_col = final_position.col - initial_position.col
+        
+        if ( abs(d_row) <= 1 and
+             abs(d_col) <= 1 ):
                 return True
             
-        # TODO: CASTLING
+        if self.isValidCastle(initial_position, final_position, board):
+            return True
         
         print('Invalid king move')
         return False
+    
+    def isValidCastle(self, initial_position, final_position, board):
+        d_row = final_position.row - initial_position.row
+        d_col = final_position.col - initial_position.col
+            
+        if ( not self.hasMoved and
+             d_row == 0 and
+             abs(d_col) == 2 ):
+            if ( d_col == 2 and
+                 board.isEmpty(Box(initial_position.row, 5)) and board.isEmpty(Box(initial_position.row, 6)) and
+                 (not board.isEmpty(Box(initial_position.row, 7))) and
+                 (not board.getPiece(Box(initial_position.row, 7)).hasMoved) ):
+                board.makeMove(Box(initial_position.row, 7), Box(initial_position.row, 5))
+                return True
+            if ( d_col == -2 and
+                 board.isEmpty(Box(initial_position.row, 1)) and board.isEmpty(Box(initial_position.row, 2)) and board.isEmpty(Box(initial_position.row, 3)) and
+                 (not board.isEmpty(Box(initial_position.row, 0))) and
+                 (not board.getPiece(Box(initial_position.row, 0)).hasMoved)):
+                board.makeMove(Box(initial_position.row, 0), Box(initial_position.row, 3))
+                return True
+        
+        
+
+class Box():
+    def __init__(self, row, col):
+        if row < 0:
+            row += 8
+        if col < 0:
+            col += 8
+        self.row = row
+        self.col = col
+        
+    def __repr__(self):
+        return '(' + str(self.row) + ',' + str(self.col) + ')' 

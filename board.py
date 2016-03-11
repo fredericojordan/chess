@@ -1,4 +1,4 @@
-from pieces import Pawn, Knight, Bishop, Rook, Queen, King
+from pieces import Pawn, Knight, Bishop, Rook, Queen, King, Box
 
 class Board(list):
 #     EMPTY_BOX = None
@@ -41,7 +41,7 @@ class Board(list):
         self.putPiece(Bishop('white'), Box(-1, 5))
         self.putPiece(Knight('white'), Box(-1, 6))
         self.putPiece(Rook('white'), Box(-1, 7))
-    
+        
     def move(self, initialPosition, finalPosition):
         moving_piece = self.getPiece(initialPosition)
         
@@ -88,15 +88,3 @@ class Board(list):
     
     def isEmpty(self, position):
         return self[position.row][position.col] == Board.EMPTY_BOX
-        
-class Box():
-    def __init__(self, row, col):
-        if row < 0:
-            row += 8
-        if col < 0:
-            col += 8
-        self.row = row
-        self.col = col
-        
-    def __repr__(self):
-        return '(' + str(self.row) + ',' + str(self.col) + ')' 

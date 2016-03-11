@@ -41,7 +41,7 @@ game.move(Box(-2,4), Box(-4,4)) # e4
 game.move(Box(1,3), Box(3,3)) # ...d5
 game.move(Box(-1,1), Box(-3,2)) # nc3
 game.move(Box(3,3), Box(4,4)) # ...dxe4
-
-game.move(Box(7,7), Box(0,7)) # ...rh1 (INVALID JUMP BY ROOK)
+ 
+game.move(Box(7,7), Box(0,7)) # rh7 (INVALID JUMP BY ROOK)
 
 game.board._print()
