@@ -70,11 +70,15 @@ class Board(list):
         moving_piece.hasMoved = True
     
     def isInvalidJump(self, initialPosition, finalPosition):
-        if (False): # TODO
-            print("Invalid move: can't jump like that!")
-            return True
-        else:
+        if ( isinstance(self.getPiece(initialPosition), Knight) ):
             return False
+        
+        for box in self.getInBetweenBoxes(initialPosition, finalPosition):
+            if not self.isEmpty(box):
+                print("Invalid move: can't jump like that!")
+                return True
+        
+        return False
         
             
     def putPiece(self, piece, position):
@@ -88,3 +92,31 @@ class Board(list):
     
     def isEmpty(self, position):
         return self[position.row][position.col] == Board.EMPTY_BOX
+    
+    def getInBetweenBoxes(self, initialPosition, finalPosition):
+        boxes = []
+        if ( initialPosition.row == finalPosition.row ):
+            max_col = max(initialPosition.col, finalPosition.col)
+            min_col = min(initialPosition.col, finalPosition.col)+1
+            for col in range(min_col, max_col):
+                boxes.append(Box(initialPosition.row, col))
+        elif ( initialPosition.col == finalPosition.col ):
+            max_row = max(initialPosition.row, finalPosition.row)
+            min_row = min(initialPosition.row, finalPosition.row)+1
+            for row in range(min_row, max_row):
+                boxes.append(Box(row, initialPosition.col))
+        elif ( abs(finalPosition.col-initialPosition.col) == abs(finalPosition.row-initialPosition.row) and
+               abs(finalPosition.col-initialPosition.col) > 1 ):
+            d_row = finalPosition.row-initialPosition.row
+            d_col = finalPosition.col-initialPosition.col
+            if ( d_row*d_col < 0 ):
+                min_row = min(initialPosition.row, finalPosition.row)+1
+                max_col = max(initialPosition.col, finalPosition.col)-1
+                for diff in range(abs(d_row)-1):
+                    boxes.append(Box(min_row+diff, max_col-diff))
+            else:
+                min_row = min(initialPosition.row, finalPosition.row)+1
+                min_col = min(initialPosition.col, finalPosition.col)+1
+                for diff in range(abs(d_row)-1):
+                    boxes.append(Box(min_row+diff, min_col+diff))
+        return boxes
