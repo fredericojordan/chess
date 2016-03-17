@@ -3,6 +3,8 @@ from pieces import Pawn, Knight, Bishop, Rook, Queen, King, Box
 class Board(list):
 #     EMPTY_BOX = None
     EMPTY_BOX = ''
+    COLS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+    ROWS = ['1', '2', '3', '4', '5', '6', '7', '8']
     
     def __init__(self):
         self.makeBoxes()
@@ -15,37 +17,37 @@ class Board(list):
     
     def _print(self):
         print('')
-        for row in self:
-            print(row)
-        print('')
+        for i in range(len(Board.ROWS)):
+            print( str(8-i) + " " + str(self[i]) )
+        print('   a   b   c   d   e   f   g   h')
             
     def populate(self):
-        for i in range(8):
-            self.putPiece(Pawn('black'), Box(1, i))
-            self.putPiece(Pawn('white'), Box(-2, i))
-            
-        self.putPiece(Rook('black'), Box(0, 0))
-        self.putPiece(Knight('black'), Box(0, 1))
-        self.putPiece(Bishop('black'), Box(0, 2))
-        self.putPiece(Queen('black'), Box(0, 3))
-        self.putPiece(King('black'), Box(0, 4))
-        self.putPiece(Bishop('black'), Box(0, 5))
-        self.putPiece(Knight('black'), Box(0, 6))
-        self.putPiece(Rook('black'), Box(0, 7))
-        
-        self.putPiece(Rook('white'), Box(-1, 0))
-        self.putPiece(Knight('white'), Box(-1, 1))
-        self.putPiece(Bishop('white'), Box(-1, 2))
-        self.putPiece(Queen('white'), Box(-1, 3))
-        self.putPiece(King('white'), Box(-1, 4))
-        self.putPiece(Bishop('white'), Box(-1, 5))
-        self.putPiece(Knight('white'), Box(-1, 6))
-        self.putPiece(Rook('white'), Box(-1, 7))
+        for col in Board.COLS:
+            self.putPiece(Pawn('black'), col+'7')
+            self.putPiece(Pawn('white'), col+'2')
+             
+        self.putPiece(Rook('black'), 'a8')
+        self.putPiece(Knight('black'), 'b8')
+        self.putPiece(Bishop('black'), 'c8')
+        self.putPiece(Queen('black'), 'd8')
+        self.putPiece(King('black'), 'e8')
+        self.putPiece(Bishop('black'), 'f8')
+        self.putPiece(Knight('black'), 'g8')
+        self.putPiece(Rook('black'), 'h8')
+         
+        self.putPiece(Rook('white'), 'a1')
+        self.putPiece(Knight('white'), 'b1')
+        self.putPiece(Bishop('white'), 'c1')
+        self.putPiece(Queen('white'), 'd1')
+        self.putPiece(King('white'), 'e1')
+        self.putPiece(Bishop('white'), 'f1')
+        self.putPiece(Knight('white'), 'g1')
+        self.putPiece(Rook('white'), 'h1')
         
     def move(self, initialPosition, finalPosition):
         moving_piece = self.getPiece(initialPosition)
         
-        if not moving_piece.isValidMove(initialPosition, finalPosition, self) or self.isInvalidJump(initialPosition, finalPosition):
+        if not self.isPathClear(initialPosition, finalPosition) or not moving_piece.isValidMove(initialPosition, finalPosition, self):
             return False
         
 #         If the player was previous under check and the move does not remove the check, it must be undone.
@@ -59,6 +61,7 @@ class Board(list):
             return False
 
         self.makeMove(initialPosition, finalPosition)
+        self.checkForPromotion(finalPosition)
         return True
         
     def makeMove(self, initialPosition, finalPosition):
@@ -69,54 +72,70 @@ class Board(list):
         self.removePiece(initialPosition)
         moving_piece.hasMoved = True
     
-    def isInvalidJump(self, initialPosition, finalPosition):
-        if ( isinstance(self.getPiece(initialPosition), Knight) ):
+    def checkForPromotion(self, position):
+        if ( isinstance(self.getPiece(position), Pawn) ):
+            if ( (self.getPiece(position).color == 'white' and Box(position).row == 0) or 
+                 (self.getPiece(position).color == 'black' and Box(position).row == 7) ):
+                self.promote(position)
+            
+    def promote(self, position):
+        color = self.getPiece(position).color
+        self.removePiece(position)
+        self.putPiece(Queen(color), position)
+        
+    def isValidPosition(self, position):
+        if (position[0] in Board.COLS and
+            position[1] in Board.ROWS):
+            return True
+        else:
             return False
+    
+    def isPathClear(self, initialPosition, finalPosition):
+        if ( isinstance(self.getPiece(initialPosition), Knight) ):
+            return True
         
-        for box in self.getInBetweenBoxes(initialPosition, finalPosition):
-            if not self.isEmpty(box):
-                print("Invalid move: can't jump like that!")
-                return True
+        for position in self.getInBetweenPositions(initialPosition, finalPosition):
+            if not self.isEmpty(position):
+                print("Invalid move: path is not clear!")
+                return False
         
-        return False
+        return True
         
             
     def putPiece(self, piece, position):
-        self[position.row][position.col] = piece
+        self[Box(position).row][Box(position).col] = piece
         
     def removePiece(self, position):
-        self[position.row][position.col] = Board.EMPTY_BOX
+        self[Box(position).row][Box(position).col] = Board.EMPTY_BOX
         
     def getPiece(self, position):
-        return self[position.row][position.col]
+        return self[Box(position).row][Box(position).col]
     
     def isEmpty(self, position):
-        return self[position.row][position.col] == Board.EMPTY_BOX
+        return self[Box(position).row][Box(position).col] == Board.EMPTY_BOX
     
-    def getInBetweenBoxes(self, initialPosition, finalPosition):
-        boxes = []
-        if ( initialPosition.row == finalPosition.row ):
-            max_col = max(initialPosition.col, finalPosition.col)
-            min_col = min(initialPosition.col, finalPosition.col)+1
-            for col in range(min_col, max_col):
-                boxes.append(Box(initialPosition.row, col))
-        elif ( initialPosition.col == finalPosition.col ):
-            max_row = max(initialPosition.row, finalPosition.row)
-            min_row = min(initialPosition.row, finalPosition.row)+1
-            for row in range(min_row, max_row):
-                boxes.append(Box(row, initialPosition.col))
-        elif ( abs(finalPosition.col-initialPosition.col) == abs(finalPosition.row-initialPosition.row) and
-               abs(finalPosition.col-initialPosition.col) > 1 ):
-            d_row = finalPosition.row-initialPosition.row
-            d_col = finalPosition.col-initialPosition.col
-            if ( d_row*d_col < 0 ):
-                min_row = min(initialPosition.row, finalPosition.row)+1
-                max_col = max(initialPosition.col, finalPosition.col)-1
-                for diff in range(abs(d_row)-1):
-                    boxes.append(Box(min_row+diff, max_col-diff))
+    def getInBetweenPositions(self, initialPosition, finalPosition):
+        positions = []
+        min_row = min(Box(finalPosition).row, Box(initialPosition).row)
+        min_col = min(Box(finalPosition).col, Box(initialPosition).col)
+        d_row = Box(finalPosition).row - Box(initialPosition).row
+        d_col = Box(finalPosition).col - Box(initialPosition).col
+        
+        if d_row == 0:
+            for i in range(1, abs(d_col)):
+                positions.append(Box.makePos(Box(initialPosition).row, min_col+i))
+        
+        if d_col == 0:
+            for i in range(1, abs(d_row)):
+                positions.append(Box.makePos(min_row+i, Box(initialPosition).col))
+        
+        if abs(d_row) == abs(d_col):
+            if ( d_row*d_col > 0 ):
+                for i in range(1, abs(d_row)):
+                    positions.append(Box.makePos(min_row+i, min_col+i))
             else:
-                min_row = min(initialPosition.row, finalPosition.row)+1
-                min_col = min(initialPosition.col, finalPosition.col)+1
-                for diff in range(abs(d_row)-1):
-                    boxes.append(Box(min_row+diff, min_col+diff))
-        return boxes
+                max_col = max(Box(finalPosition).col, Box(initialPosition).col)
+                for i in range(1, abs(d_row)):
+                    positions.append(Box.makePos(min_row+i, max_col-i))
+        
+        return positions

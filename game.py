@@ -1,4 +1,4 @@
-from board import Board, Box
+from board import Board
 
 class Game():
     def __init__(self):
@@ -8,6 +8,10 @@ class Game():
         self.nextPlayer = self.whitePlayer
     
     def move(self, initialPosition, finalPosition):
+        if not ( self.board.isValidPosition(initialPosition) and self.board.isValidPosition(finalPosition) ):
+            print("Invalid position!")
+            return False
+        
         if ( self.board.isEmpty(initialPosition) ):
             print('Invalid move: initial position is empty!')
             return False
@@ -37,25 +41,22 @@ class Player():
 game = Game()
 game.board._print()
 
-game.move(Box.fromPos('e2'), Box.fromPos('e4')) # e4
-game.move(Box.fromPos('d7'), Box.fromPos('d5')) # ...d5
-game.move(Box.fromPos('b1'), Box.fromPos('c3')) # nc3
-game.move(Box.fromPos('d5'), Box.fromPos('e4')) # ...dxe4
-  
-game.move(Box.fromPos('h1'), Box.fromPos('h8')) # rh7 (INVALID JUMP BY ROOK)
-game.move(Box.fromPos('f1'), Box.fromPos('h3')) # bh3 (INVALID JUMP BY BISHOP)
- 
-game.move(Box.fromPos('c3'), Box.fromPos('e4')) # ne4
+game.move('e2', 'e4') # e4
+game.move('d7', 'd5') # ...d5
 
-# game.move(Box(-2,4), Box(-4,4)) # e4
-# game.move(Box(1,3), Box(3,3)) # ...d5
-# game.move(Box(-1,1), Box(-3,2)) # nc3
-# game.move(Box(3,3), Box(4,4)) # ...dxe4
-#  
-# game.move(Box(7,7), Box(0,7)) # rh7 (INVALID JUMP BY ROOK)
-# game.move(Box(7,5), Box(5,7)) # bh3 (INVALID JUMP BY BISHOP)
-# 
-# game.move(Box(5,2), Box(4,4)) # ne4
+game.move('b1', 'c3') # Nc3
+game.move('d5', 'e4') # ...dxe4
+    
+game.move('j9', 'f3') # INVALID POSITIONS
+game.move('h1', 'h8') # Rh7 (INVALID JUMP BY ROOK)
+game.move('f1', 'h3') # Bh3 (INVALID JUMP BY BISHOP)
+game.move('c1', 'g5') # Bg5 (INVALID JUMP BY BISHOP)   
+game.move('f1', 'c4') # Bc4
+game.move('c7', 'c5') # ...c5
 
+game.move('g1', 'f3') # Nf3
+game.move('b7', 'b6') # ...b6
+
+game.move('e1', 'g1') # O-O
 
 game.board._print()
