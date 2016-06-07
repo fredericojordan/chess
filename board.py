@@ -1,7 +1,6 @@
 from pieces import Pawn, Knight, Bishop, Rook, Queen, King, Box
 
 class Board(list):
-#     EMPTY_BOX = None
     EMPTY_BOX = ''
     COLS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
     ROWS = ['1', '2', '3', '4', '5', '6', '7', '8']
@@ -12,8 +11,8 @@ class Board(list):
         
     def makeBoxes(self):
         del self[:]
-        for _ in range(8):
-            self.append([Board.EMPTY_BOX for _ in range(8)])
+        for _ in range(len(Board.ROWS)):
+            self.append([Board.EMPTY_BOX for _ in range(len(Board.COLS))])
     
     def _print(self):
         print('')
@@ -44,33 +43,27 @@ class Board(list):
         self.putPiece(Knight('white'), 'g1')
         self.putPiece(Rook('white'), 'h1')
         
-    def move(self, initialPosition, finalPosition):
+    def canMove(self, initialPosition, finalPosition):
         moving_piece = self.getPiece(initialPosition)
-        
-        if not self.isPathClear(initialPosition, finalPosition) or not moving_piece.isValidMove(initialPosition, finalPosition, self):
-            return False
         
 #         If the player was previous under check and the move does not remove the check, it must be undone.
 #         If the move exposes check, it must be undone / disallowed.
 #         If the moving_piece is a pawn reaching the back rank, promote it.
 #         If the move is a castling, set the new position of the rook accordingly. But a king and rook can only castle if they haven't moved, so you need to keep track of that. And if the king moves through a check to castle, that's disallowed, too.
 #         If the move results in a stalemate or checkmate, the game is over.
-
-        if not self.isEmpty(finalPosition) and self.getPiece(finalPosition).color == moving_piece.color:
-            print("Can't capture own piece")
-            return False
-
-        self.makeMove(initialPosition, finalPosition)
-        self.checkForPromotion(finalPosition)
-        return True
+        
+        return self.isPathClear(initialPosition, finalPosition) and \
+            moving_piece.isValidMove(initialPosition, finalPosition, self) and \
+            ( self.isEmpty(finalPosition) or self.getPiece(finalPosition).color != moving_piece.color )
         
     def makeMove(self, initialPosition, finalPosition):
-        print('Making move ' + str(initialPosition) + ' to ' + str(finalPosition))
         moving_piece = self.getPiece(initialPosition)
+        print('Moving ' + moving_piece.color + ' ' + moving_piece.__class__.__name__ + ' (' + str(initialPosition) + ') to ' + str(finalPosition))
         self.removePiece(finalPosition)
         self.putPiece(moving_piece, finalPosition)
         self.removePiece(initialPosition)
         moving_piece.hasMoved = True
+        self.checkForPromotion(finalPosition)
     
     def checkForPromotion(self, position):
         if ( isinstance(self.getPiece(position), Pawn) ):
@@ -84,6 +77,8 @@ class Board(list):
         self.putPiece(Queen(color), position)
         
     def isValidPosition(self, position):
+        if len(position) < 2:
+            return False
         if (position[0] in Board.COLS and
             position[1] in Board.ROWS):
             return True
@@ -96,11 +91,13 @@ class Board(list):
         
         for position in self.getInBetweenPositions(initialPosition, finalPosition):
             if not self.isEmpty(position):
-                print("Invalid move: path is not clear!")
+#                 print("Invalid move: path is not clear!")
                 return False
         
         return True
-        
+    
+    def pathIsNotInCheck(self, initialPosition, finalPosition):
+        return True # FIXME
             
     def putPiece(self, piece, position):
         self[Box(position).row][Box(position).col] = piece
@@ -139,3 +136,24 @@ class Board(list):
                     positions.append(Box.makePos(min_row+i, max_col-i))
         
         return positions
+    
+    def getAllPositions(self):
+        all_pos = []
+        for row in Board.ROWS:
+            for col in Board.COLS:
+                    all_pos.append(col+row)
+        return all_pos
+    
+    def getAllNonEmptyPositions(self):
+        non_empty_pos = []
+        for position in self.getAllPositions():
+            if not self.isEmpty(position):
+                non_empty_pos.append(position)
+        return non_empty_pos
+    
+    def getAllPieces(self):
+        all_pieces = []
+        for position in self.getAllPositions():
+            if not self.isEmpty(position):
+                all_pieces.append(self.getPiece(position))
+        return all_pieces
