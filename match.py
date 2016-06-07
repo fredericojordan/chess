@@ -15,8 +15,9 @@ while(True):
         pos1 = input()
         pos2 = input()
         if game.move(pos1, pos2):
-            break;
-        print('Invalid move!')
+            break
+        else:
+            print('Invalid move!')
     
     # NPC moves
     game.aiMove()
