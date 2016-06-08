@@ -24,7 +24,7 @@ class Game():
     
     def aiMove(self):
         moves = self.getAllLegalMoves()
-#         print(str(len(moves)) + " legal moves")
+        print(str(len(moves)) + " legal moves: " + str(moves))
         rand_i = randint(0, len(moves)-1)
         chosen_move = moves[rand_i]
         self.move(chosen_move[0:2],chosen_move[2:4])

@@ -22,11 +22,15 @@ class Pawn(Piece):
         
     def __repr__(self):
         if self.color == 'white':
-#             return u'\u2659'
             return 'wp'
         if self.color == 'black':
-#             return u'\u265F'
             return 'bp'
+        
+    def toChar(self):
+        if self.color == 'white':
+            return u'\u2659'
+        if self.color == 'black':
+            return u'\u265F'
         
     
     def isValidMove(self, initialPosition, finalPosition, board):
@@ -76,11 +80,15 @@ class Knight(Piece):
     
     def __repr__(self):
         if self.color == 'white':
-#             return u'\u2658'
             return 'wN'
         if self.color == 'black':
-#             return u'\u265E'
             return 'bN'
+        
+    def toChar(self):
+        if self.color == 'white':
+            return u'\u2658'
+        if self.color == 'black':
+            return u'\u265E'
     
     def isValidMove(self, initialPosition, finalPosition, board):
         if not Piece.isValidMove(self, initialPosition, finalPosition, board):
@@ -101,11 +109,15 @@ class Bishop(Piece):
     
     def __repr__(self):
         if self.color == 'white':
-#             return u'\u2657'
             return 'wB'
         if self.color == 'black':
-#             return u'\u265D'
             return 'bB'
+        
+    def toChar(self):
+        if self.color == 'white':
+            return u'\u2657'
+        if self.color == 'black':
+            return u'\u265D'
 
     def isValidMove(self, initialPosition, finalPosition, board):
         if not Piece.isValidMove(self, initialPosition, finalPosition, board):
@@ -125,11 +137,15 @@ class Rook(Piece):
         
     def __repr__(self):
         if self.color == 'white':
-#             return u'\u2656'
             return 'wR'
         if self.color == 'black':
-#             return u'\u265C'
             return 'bR'
+        
+    def toChar(self):
+        if self.color == 'white':
+            return u'\u2656'
+        if self.color == 'black':
+            return u'\u265C'
     
     def isValidMove(self, initialPosition, finalPosition, board):
         if not Piece.isValidMove(self, initialPosition, finalPosition, board):
@@ -150,11 +166,15 @@ class Queen(Piece):
         
     def __repr__(self):
         if self.color == 'white':
-#             return u'\u2655'
             return 'wQ'
         if self.color == 'black':
-#             return u'\u265B'
             return 'bQ'
+
+    def toChar(self):
+        if self.color == 'white':
+            return u'\u2655'
+        if self.color == 'black':
+            return u'\u265B'
     
     def isValidMove(self, initialPosition, finalPosition, board):
         if not Piece.isValidMove(self, initialPosition, finalPosition, board):
@@ -173,12 +193,16 @@ class King(Piece):
         
     def __repr__(self):
         if self.color == 'white':
-#             return u'\u2654'
             return 'wK'
         if self.color == 'black':
-#             return u'\u265A'
             return 'bK'
-    
+
+    def toChar(self):
+        if self.color == 'white':
+            return u'\u2654'
+        if self.color == 'black':
+            return u'\u265A'
+        
     def isValidMove(self, initialPosition, finalPosition, board):
         if not Piece.isValidMove(self, initialPosition, finalPosition, board):
             return False
