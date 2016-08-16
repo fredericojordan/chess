@@ -67,50 +67,65 @@ INITIAL_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KIN
                   BLACK|PAWN, BLACK|PAWN,   BLACK|PAWN,   BLACK|PAWN,  BLACK|PAWN, BLACK|PAWN,   BLACK|PAWN,   BLACK|PAWN,
                   BLACK|ROOK, BLACK|KNIGHT, BLACK|BISHOP, BLACK|QUEEN, BLACK|KING, BLACK|BISHOP, BLACK|KNIGHT, BLACK|ROOK ]
 
-EMPTY_BOARD = [ 0 for _ in range(64) ]
+EMPTY_BOARD = [ EMPTY for _ in range(64) ]
 
 def parse_pos(position):
     file = FILES.index(position[0])
     rank = RANKS.index(position[1])
     return 8*rank + file
 
+def single_pos(position):
+    return 0b1 << parse_pos(position)
+
 def piece_str(piece):
-    piece_codes = { WHITE|KING:  'K',
-                    WHITE|QUEEN: 'Q',
-                    WHITE|ROOK:  'R',
-                    WHITE|BISHOP:'B',
-                    WHITE|KNIGHT:'N',
-                    WHITE|PAWN:  'P',
-                    BLACK|KING:  'k',
-                    BLACK|QUEEN: 'q',
-                    BLACK|ROOK:  'r',
-                    BLACK|BISHOP:'b',
-                    BLACK|KNIGHT:'n',
-                    BLACK|PAWN:  'p',
-                    EMPTY:       '.' }
-    return piece_codes[ piece & (PIECE_MASK|COLOR_MASK) ]
+    piece_strings = { WHITE|KING:  'K',
+                      WHITE|QUEEN: 'Q',
+                      WHITE|ROOK:  'R',
+                      WHITE|BISHOP:'B',
+                      WHITE|KNIGHT:'N',
+                      WHITE|PAWN:  'P',
+                      BLACK|KING:  'k',
+                      BLACK|QUEEN: 'q',
+                      BLACK|ROOK:  'r',
+                      BLACK|BISHOP:'b',
+                      BLACK|KNIGHT:'n',
+                      BLACK|PAWN:  'p',
+                      EMPTY:       '.' }
+    return piece_strings[ piece & (PIECE_MASK|COLOR_MASK) ]
     
 def print_board(board):
     print('')
     for i in range(len(RANKS)):
-        rank_str = str(8-i) + " "
+        rank_str = str(8-i) + ' '
         first = len(board) - 8*(i+1)
         for file in range(len(FILES)):
-            rank_str += "{} ".format(piece_str(board[first+file]))
+            rank_str += '{} '.format(piece_str(board[first+file]))
         print(rank_str)
     print('  a b c d e f g h')
     
 def print_bitboard(board):
-    print("")
+    print('')
     for rank in range(len(RANKS)):
-        rank_str = str(8-rank) + " "
+        rank_str = str(8-rank) + ' '
         for file in range(len(FILES)):
             if (board >> (file + (7-rank)*8)) & 0b1:
-                rank_str += "# "
+                rank_str += '# '
             else:
-                rank_str += ". "
+                rank_str += '. '
         print(rank_str)
     print('  a b c d e f g h')
+    
+def lsb(bitboard):
+    for i in range(64):
+        bit = (0b1 << i) 
+        if bit & bitboard:
+            return bit
+
+def msb(bitboard):
+    for i in range(64):
+        bit = (0b1 << (63-i)) 
+        if bit & bitboard:
+            return bit
 
 def black_pieces(board):
     return list2int([ (i&COLOR_MASK == BLACK and i&PIECE_MASK != EMPTY) for i in board ])
@@ -131,6 +146,7 @@ def list2int(lst):
 
 def nnot(bitboard):
     return (bitboard ^ ALL_SQUARES)
+#     return ~bitboard
 
 def east_one(bitboard):
     return (bitboard << 1) & nnot(FILE_A)
@@ -144,7 +160,19 @@ def north_one(bitboard):
 def south_one(bitboard):
     return (bitboard >> 8) & nnot(RANK_8)
 
-# ========== PAWNS ==========
+def NE_one(bitboard):
+    return north_one(east_one(bitboard))
+
+def NW_one(bitboard):
+    return north_one(west_one(bitboard))
+
+def SE_one(bitboard):
+    return south_one(east_one(bitboard))
+
+def SW_one(bitboard):
+    return south_one(west_one(bitboard))
+
+# ========== PAWN ==========
 
 def pawns(board):
     return list2int([ i&PIECE_MASK == PAWN for i in board ])
@@ -191,7 +219,7 @@ def pawn_west_attacks(board, color):
 def pawn_double_attacks(board, color):
     return pawn_east_attacks(board, color) & pawn_west_attacks(board, color)
 
-# ========== KNIGHTS ==========
+# ========== KNIGHT ==========
 
 def knights(board):
     return list2int([ i&PIECE_MASK == KNIGHT for i in board ])
@@ -236,7 +264,7 @@ def knight_SSE(bitboard):
 def knight_SSW(bitboard):
     return bitboard >> 17 & nnot(FILE_H)
 
-# ========== KINGS ==========
+# ========== KING ==========
 
 def kings(board):
     return list2int([ i&PIECE_MASK == KING for i in board ])
@@ -252,14 +280,89 @@ def king_attacks(bitboard):
     king_atks |= north_one(king_atks) | south_one(king_atks)
     return king_atks & nnot(bitboard)
 
+# ========== BISHOP ==========
 
+def bishops(board):
+    return list2int([ i&PIECE_MASK == BISHOP for i in board ])
 
+def bishop_rays(bitboard):
+    return diagonal_attacks(bitboard) | anti_diagonal_attacks(bitboard)
+           
+def diagonal_attacks(bitboard):
+    return NE_ray(bitboard) | SW_ray(bitboard)
 
+def anti_diagonal_attacks(bitboard):
+    return NW_ray(bitboard) | SE_ray(bitboard)
 
+def NE_ray(bitboard):
+    ray_atks = NE_one(bitboard)
+    for _ in range(6):
+        ray_atks |= NE_one(ray_atks)
+    return ray_atks & ALL_SQUARES
 
+def SE_ray(bitboard):
+    ray_atks = SE_one(bitboard)
+    for _ in range(6):
+        ray_atks |= SE_one(ray_atks)
+    return ray_atks & ALL_SQUARES
 
+def NW_ray(bitboard):
+    ray_atks = NW_one(bitboard)
+    for _ in range(6):
+        ray_atks |= NW_one(ray_atks)
+    return ray_atks & ALL_SQUARES
 
+def SW_ray(bitboard):
+    ray_atks = SW_one(bitboard)
+    for _ in range(6):
+        ray_atks |= SW_one(ray_atks)
+    return ray_atks & ALL_SQUARES
 
+# ========== ROOK ==========
+
+def rooks(board):
+    return list2int([ i&PIECE_MASK == ROOK for i in board ])
+
+def rook_rays(bitboard):
+    return rank_attacks(bitboard) | file_attacks(bitboard)
+
+def rank_attacks(bitboard):
+    return east_ray(bitboard) | west_ray(bitboard)
+
+def file_attacks(bitboard):
+    return north_ray(bitboard) | south_ray(bitboard)
+
+def east_ray(bitboard):
+    ray_atks = east_one(bitboard)
+    for _ in range(6):
+        ray_atks |= east_one(ray_atks)
+    return ray_atks & ALL_SQUARES
+
+def west_ray(bitboard):
+    ray_atks = west_one(bitboard)
+    for _ in range(6):
+        ray_atks |= west_one(ray_atks)
+    return ray_atks & ALL_SQUARES
+
+def north_ray(bitboard):
+    ray_atks = north_one(bitboard)
+    for _ in range(6):
+        ray_atks |= north_one(ray_atks)
+    return ray_atks & ALL_SQUARES
+
+def south_ray(bitboard):
+    ray_atks = south_one(bitboard)
+    for _ in range(6):
+        ray_atks |= south_one(ray_atks)
+    return ray_atks & ALL_SQUARES
+
+# ========== QUEEN ==========
+
+def queens(board):
+    return list2int([ i&PIECE_MASK == QUEEN for i in board ])
+
+def queen_rays(bitboard):
+    return rook_rays(bitboard) | bishop_rays(bitboard)
 
 
 TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KING, WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
@@ -272,6 +375,13 @@ TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KING, 
                BLACK|ROOK, EMPTY,        EMPTY,        BLACK|QUEEN, BLACK|KING, BLACK|BISHOP, BLACK|KNIGHT, BLACK|ROOK ]
 
 print_board(TEST_BOARD)
-print_bitboard(king_moves(TEST_BOARD, BLACK) | pawn_moves(TEST_BOARD, WHITE))
-print_bitboard(knight_moves(TEST_BOARD, BLACK))
-
+# print_bitboard(king_moves(TEST_BOARD, BLACK) | pawn_moves(TEST_BOARD, WHITE))
+# print_bitboard(knight_moves(TEST_BOARD, BLACK))
+# print_bitboard(rooks(TEST_BOARD) | bishops(TEST_BOARD))
+# print_bitboard(rook_rays(queens(TEST_BOARD)))
+# print_bitboard(queen_rays(queens(TEST_BOARD)))
+# print_bitboard(bishop_rays(single_pos('c5')))
+# print_bitboard(rook_rays(single_pos('f2')))
+print_bitboard(queen_rays(single_pos('h4')))
+# print_bitboard(msb(ALL_SQUARES))
+# print_bitboard(lsb(ALL_SQUARES))
