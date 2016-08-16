@@ -124,12 +124,12 @@ def print_board(board):
         print(rank_str)
     print('  a b c d e f g h')
     
-def print_bitboard(board):
+def print_bitboard(bitboard):
     print('')
     for rank in range(len(RANKS)):
         rank_str = str(8-rank) + ' '
         for file in range(len(FILES)):
-            if (board >> (file + (7-rank)*8)) & 0b1:
+            if (bitboard >> (file + (7-rank)*8)) & 0b1:
                 rank_str += '# '
             else:
                 rank_str += '. '
@@ -153,6 +153,9 @@ def black_pieces(board):
 
 def white_pieces(board):
     return list2int([ (i&COLOR_MASK == WHITE and i&PIECE_MASK != EMPTY) for i in board ])
+
+def get_colored_pieces(board, color):
+    return list2int([ (i&COLOR_MASK == color and i&PIECE_MASK != EMPTY) for i in board ])
 
 def empty_squares(board):
     return list2int([ i&PIECE_MASK == EMPTY for i in board ])
@@ -391,6 +394,10 @@ def bishop_attacks(bitboard, board, color):
         atks |= diagonal_attacks(single_bb, board, color) | anti_diagonal_attacks(single_bb, board, color)
     return atks
 
+def bishop_moves(board, color):
+    bitboard = bishops(board)&get_colored_pieces(board, color)
+    return bishop_attacks(bitboard, board, color)
+
 # ========== ROOK ==========
 
 def rooks(board):
@@ -481,6 +488,10 @@ def rook_attacks(bitboard, board, color):
         atks |= rank_attacks(single_bb, board, color) | file_attacks(single_bb, board, color)
     return atks
 
+def rook_moves(board, color):
+    bitboard = rooks(board)&get_colored_pieces(board, color)
+    return rook_attacks(bitboard, board, color)
+
 # ========== QUEEN ==========
 
 def queens(board):
@@ -489,8 +500,20 @@ def queens(board):
 def queen_rays(bitboard):
     return rook_rays(bitboard) | bishop_rays(bitboard)
 
-def queen_atks(bitboard, board, color):
+def queen_attacks(bitboard, board, color):
     return rook_attacks(bitboard, board, color) | bishop_attacks(bitboard, board, color)
+
+def queen_moves(board, color):
+    bitboard = queens(board)&get_colored_pieces(board, color)
+    return queen_attacks(bitboard, board, color)
+
+def all_moves(board, color): # FIXME: add castling?
+    return pawn_moves(board, color) | \
+           knight_moves(board, color) | \
+           bishop_moves(board, color) | \
+           rook_moves(board, color) | \
+           queen_moves(board, color) | \
+           king_moves(board, color) 
 
 
 TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KING,  WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
@@ -515,4 +538,7 @@ print_board(TEST_BOARD)
 # print_bitboard(lsb(ALL_SQUARES))
 # print_bitboard(rook_attacks(queens(TEST_BOARD), TEST_BOARD, WHITE))
 # print_bitboard(bishop_attacks(bishops(TEST_BOARD)&black_pieces(TEST_BOARD), TEST_BOARD, BLACK))
-print_bitboard(queen_atks(queens(TEST_BOARD)&black_pieces(TEST_BOARD), TEST_BOARD, BLACK))
+# print_bitboard(queen_attacks(queens(TEST_BOARD)&black_pieces(TEST_BOARD), TEST_BOARD, BLACK))
+# print_bitboard(queen_moves(TEST_BOARD, BLACK))
+# print_bitboard(king_moves(TEST_BOARD, WHITE))
+print_bitboard(all_moves(TEST_BOARD, WHITE)&black_pieces(TEST_BOARD))
