@@ -69,6 +69,11 @@ INITIAL_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KIN
 
 EMPTY_BOARD = [ EMPTY for _ in range(64) ]
 
+def get_piece(board, bitboard):
+    for i in range(64):
+        if (bitboard >> i) & 0b1:
+            return board[i]
+
 def parse_pos(position):
     file = FILES.index(position[0])
     rank = RANKS.index(position[1])
@@ -76,6 +81,22 @@ def parse_pos(position):
 
 def single_pos(position):
     return 0b1 << parse_pos(position)
+
+def single_gen(bitboard):
+    for i in range(64):
+        bit = 0b1 << i
+        if bitboard & bit:
+            yield bit
+
+def piece_gen(board, piece_code):
+    for i in range(64):
+        if board[i]&PIECE_MASK == piece_code:
+            yield 0b1 << i
+
+def colored_piece_gen(board, piece_code, color):
+    for i in range(64):
+        if board[i]&(PIECE_MASK|COLOR_MASK) == piece_code|color:
+            yield 0b1 << i
 
 def piece_str(piece):
     piece_strings = { WHITE|KING:  'K',
@@ -286,12 +307,12 @@ def bishops(board):
     return list2int([ i&PIECE_MASK == BISHOP for i in board ])
 
 def bishop_rays(bitboard):
-    return diagonal_attacks(bitboard) | anti_diagonal_attacks(bitboard)
+    return diagonal_rays(bitboard) | anti_diagonal_rays(bitboard)
            
-def diagonal_attacks(bitboard):
+def diagonal_rays(bitboard):
     return NE_ray(bitboard) | SW_ray(bitboard)
 
-def anti_diagonal_attacks(bitboard):
+def anti_diagonal_rays(bitboard):
     return NW_ray(bitboard) | SE_ray(bitboard)
 
 def NE_ray(bitboard):
@@ -318,18 +339,70 @@ def SW_ray(bitboard):
         ray_atks |= SW_one(ray_atks)
     return ray_atks & ALL_SQUARES
 
+def NE_attacks(single_bb, board, color):
+    blocker = lsb(NE_ray(single_bb) & occupied_squares(board))
+    if blocker:
+        if get_piece(board, blocker)&COLOR_MASK == color:
+            return (NE_ray(single_bb) ^ NE_ray(blocker)) & nnot(blocker)
+        else:
+            return NE_ray(single_bb) ^ NE_ray(blocker)
+    else:
+        return NE_ray(single_bb)
+    
+def NW_attacks(single_bb, board, color):
+    blocker = lsb(NW_ray(single_bb) & occupied_squares(board))
+    if blocker:
+        if get_piece(board, blocker)&COLOR_MASK == color:
+            return (NW_ray(single_bb) ^ NW_ray(blocker)) & nnot(blocker)
+        else:
+            return NW_ray(single_bb) ^ NW_ray(blocker)
+    else:
+        return NW_ray(single_bb)
+
+def SE_attacks(single_bb, board, color):
+    blocker = msb(SE_ray(single_bb) & occupied_squares(board))
+    if blocker:
+        if get_piece(board, blocker)&COLOR_MASK == color:
+            return (SE_ray(single_bb) ^ SE_ray(blocker)) & nnot(blocker)
+        else:
+            return SE_ray(single_bb) ^ SE_ray(blocker)
+    else:
+        return SE_ray(single_bb)
+
+def SW_attacks(single_bb, board, color):
+    blocker = msb(SW_ray(single_bb) & occupied_squares(board))
+    if blocker:
+        if get_piece(board, blocker)&COLOR_MASK == color:
+            return (SW_ray(single_bb) ^ SW_ray(blocker)) & nnot(blocker)
+        else:
+            return SW_ray(single_bb) ^ SW_ray(blocker)
+    else:
+        return SW_ray(single_bb)
+
+def diagonal_attacks(single_bb, board, color):
+    return NE_attacks(single_bb, board, color) | SW_attacks(single_bb, board, color)
+
+def anti_diagonal_attacks(single_bb, board, color):
+    return NW_attacks(single_bb, board, color) | SE_attacks(single_bb, board, color)
+
+def bishop_attacks(bitboard, board, color):
+    atks = 0
+    for single_bb in single_gen(bitboard):
+        atks |= diagonal_attacks(single_bb, board, color) | anti_diagonal_attacks(single_bb, board, color)
+    return atks
+
 # ========== ROOK ==========
 
 def rooks(board):
     return list2int([ i&PIECE_MASK == ROOK for i in board ])
 
 def rook_rays(bitboard):
-    return rank_attacks(bitboard) | file_attacks(bitboard)
+    return rank_rays(bitboard) | file_rays(bitboard)
 
-def rank_attacks(bitboard):
+def rank_rays(bitboard):
     return east_ray(bitboard) | west_ray(bitboard)
 
-def file_attacks(bitboard):
+def file_rays(bitboard):
     return north_ray(bitboard) | south_ray(bitboard)
 
 def east_ray(bitboard):
@@ -356,6 +429,58 @@ def south_ray(bitboard):
         ray_atks |= south_one(ray_atks)
     return ray_atks & ALL_SQUARES
 
+def east_attacks(single_bb, board, color):
+    blocker = lsb(east_ray(single_bb) & occupied_squares(board))
+    if blocker:
+        if get_piece(board, blocker)&COLOR_MASK == color:
+            return (east_ray(single_bb) ^ east_ray(blocker)) & nnot(blocker)
+        else:
+            return east_ray(single_bb) ^ east_ray(blocker)
+    else:
+        return east_ray(single_bb)
+    
+def west_attacks(single_bb, board, color):
+    blocker = msb(west_ray(single_bb) & occupied_squares(board))
+    if blocker:
+        if get_piece(board, blocker)&COLOR_MASK == color:
+            return (west_ray(single_bb) ^ west_ray(blocker)) & nnot(blocker)
+        else:
+            return west_ray(single_bb) ^ west_ray(blocker)
+    else:
+        return west_ray(single_bb)
+    
+def rank_attacks(single_bb, board, color):
+    return east_attacks(single_bb, board, color) | west_attacks(single_bb, board, color)
+
+def north_attacks(single_bb, board, color):
+    blocker = lsb(north_ray(single_bb) & occupied_squares(board))
+    if blocker:
+        if get_piece(board, blocker)&COLOR_MASK == color:
+            return (north_ray(single_bb) ^ north_ray(blocker)) & nnot(blocker)
+        else:
+            return north_ray(single_bb) ^ north_ray(blocker)
+    else:
+        return north_ray(single_bb)
+    
+def south_attacks(single_bb, board, color):
+    blocker = msb(south_ray(single_bb) & occupied_squares(board))
+    if blocker:
+        if get_piece(board, blocker)&COLOR_MASK == color:
+            return (south_ray(single_bb) ^ south_ray(blocker)) & nnot(blocker)
+        else:
+            return south_ray(single_bb) ^ south_ray(blocker)
+    else:
+        return south_ray(single_bb)
+    
+def file_attacks(single_bb, board, color):
+    return north_attacks(single_bb, board, color) | south_attacks(single_bb, board, color)
+
+def rook_attacks(bitboard, board, color):
+    atks = 0
+    for single_bb in single_gen(bitboard):
+        atks |= rank_attacks(single_bb, board, color) | file_attacks(single_bb, board, color)
+    return atks
+
 # ========== QUEEN ==========
 
 def queens(board):
@@ -364,15 +489,18 @@ def queens(board):
 def queen_rays(bitboard):
     return rook_rays(bitboard) | bishop_rays(bitboard)
 
+def queen_atks(bitboard, board, color):
+    return rook_attacks(bitboard, board, color) | bishop_attacks(bitboard, board, color)
 
-TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KING, WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
-               WHITE|PAWN, WHITE|PAWN,   WHITE|PAWN,   WHITE|PAWN,  WHITE|PAWN, WHITE|PAWN,   EMPTY,        EMPTY,
-               EMPTY,      BLACK|BISHOP, EMPTY,        EMPTY,       EMPTY,      EMPTY,        WHITE|PAWN,   EMPTY,
-               EMPTY,      BLACK|KNIGHT, EMPTY,        EMPTY,       EMPTY,      EMPTY,        EMPTY,        WHITE|PAWN,
-               EMPTY,      EMPTY,        EMPTY,        EMPTY,       EMPTY,      EMPTY,        EMPTY,        EMPTY,
-               EMPTY,      EMPTY,        EMPTY,        BLACK|PAWN,  EMPTY,      BLACK|PAWN,   EMPTY,        EMPTY,
-               BLACK|PAWN, BLACK|PAWN,   BLACK|PAWN,   EMPTY,       EMPTY,      EMPTY,        BLACK|PAWN,   BLACK|PAWN,
-               BLACK|ROOK, EMPTY,        EMPTY,        BLACK|QUEEN, BLACK|KING, BLACK|BISHOP, BLACK|KNIGHT, BLACK|ROOK ]
+
+TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KING,  WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
+               WHITE|PAWN, WHITE|PAWN,   WHITE|PAWN,   WHITE|PAWN,  WHITE|PAWN,  WHITE|PAWN,   EMPTY,        EMPTY,
+               EMPTY,      BLACK|BISHOP, EMPTY,        EMPTY,       EMPTY,       EMPTY,        WHITE|PAWN,   EMPTY,
+               EMPTY,      BLACK|KNIGHT, EMPTY,        EMPTY,       EMPTY,       EMPTY,        EMPTY,        WHITE|PAWN,
+               EMPTY,      EMPTY,        EMPTY,        EMPTY,       EMPTY,       EMPTY,        EMPTY,        EMPTY,
+               EMPTY,      EMPTY,        EMPTY,        BLACK|PAWN,  EMPTY,       BLACK|PAWN,   EMPTY,        EMPTY,
+               BLACK|PAWN, BLACK|PAWN,   BLACK|PAWN,   EMPTY,       BLACK|QUEEN, EMPTY,        BLACK|PAWN,   BLACK|PAWN,
+               BLACK|ROOK, EMPTY,        EMPTY,        EMPTY,       BLACK|KING,  BLACK|BISHOP, BLACK|KNIGHT, BLACK|ROOK ]
 
 print_board(TEST_BOARD)
 # print_bitboard(king_moves(TEST_BOARD, BLACK) | pawn_moves(TEST_BOARD, WHITE))
@@ -382,6 +510,9 @@ print_board(TEST_BOARD)
 # print_bitboard(queen_rays(queens(TEST_BOARD)))
 # print_bitboard(bishop_rays(single_pos('c5')))
 # print_bitboard(rook_rays(single_pos('f2')))
-print_bitboard(queen_rays(single_pos('h4')))
+# print_bitboard(queen_rays(single_pos('h4')))
 # print_bitboard(msb(ALL_SQUARES))
 # print_bitboard(lsb(ALL_SQUARES))
+# print_bitboard(rook_attacks(queens(TEST_BOARD), TEST_BOARD, WHITE))
+# print_bitboard(bishop_attacks(bishops(TEST_BOARD)&black_pieces(TEST_BOARD), TEST_BOARD, BLACK))
+print_bitboard(queen_atks(queens(TEST_BOARD)&black_pieces(TEST_BOARD), TEST_BOARD, BLACK))
