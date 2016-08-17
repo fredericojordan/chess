@@ -149,10 +149,10 @@ def msb(bitboard):
             return bit
 
 def black_pieces(board):
-    return list2int([ (i&COLOR_MASK == BLACK and i&PIECE_MASK != EMPTY) for i in board ])
-
+    return get_colored_pieces(board, BLACK)
+ 
 def white_pieces(board):
-    return list2int([ (i&COLOR_MASK == WHITE and i&PIECE_MASK != EMPTY) for i in board ])
+    return get_colored_pieces(board, WHITE)
 
 def get_colored_pieces(board, color):
     return list2int([ (i&COLOR_MASK == color and i&PIECE_MASK != EMPTY) for i in board ])
@@ -161,7 +161,7 @@ def empty_squares(board):
     return list2int([ i&PIECE_MASK == EMPTY for i in board ])
 
 def occupied_squares(board):
-    return list2int([ i&PIECE_MASK != EMPTY for i in board ])
+    return nnot(empty_squares(board))
 
 def list2int(lst):
     rev_list = lst[:]
@@ -169,8 +169,7 @@ def list2int(lst):
     return int('0b' + ''.join(['1' if i else '0' for i in rev_list]), 2)
 
 def nnot(bitboard):
-    return (bitboard ^ ALL_SQUARES)
-#     return ~bitboard
+    return ~bitboard & ALL_SQUARES
 
 def east_one(bitboard):
     return (bitboard << 1) & nnot(FILE_A)
@@ -209,36 +208,36 @@ def pawn_pushes(board, color):
 
 def pawn_captures(board, color):
     if color == WHITE:
-        return pawn_attacks(board, color) & black_pieces(board)
+        return pawn_attacks(board, color) & get_colored_pieces(board, BLACK)
     if color == BLACK:
-        return pawn_attacks(board, color) & white_pieces(board)
+        return pawn_attacks(board, color) & get_colored_pieces(board, WHITE)
 
 def pawn_attacks(board, color):
     return pawn_east_attacks(board, color) | pawn_west_attacks(board, color)
 
 def pawn_simple_pushes(board, color):
     if color == WHITE:
-        return ((pawns(board) & white_pieces(board)) << 8) & empty_squares(board)
+        return north_one(pawns(board) & get_colored_pieces(board, color)) & empty_squares(board)
     if color == BLACK:
-        return ((pawns(board) & black_pieces(board)) >> 8) & empty_squares(board)
+        return south_one(pawns(board) & get_colored_pieces(board, color)) & empty_squares(board)
     
 def pawn_double_pushes(board, color):
     if color == WHITE:
-        return ((pawn_simple_pushes(board, color)) << 8) & (empty_squares(board) & RANK_4)
+        return north_one(pawn_simple_pushes(board, color)) & (empty_squares(board) & RANK_4)
     if color == BLACK:
-        return ((pawn_simple_pushes(board, color)) >> 8) & (empty_squares(board) & RANK_5)
+        return south_one(pawn_simple_pushes(board, color)) & (empty_squares(board) & RANK_5)
 
 def pawn_east_attacks(board, color):
     if color == WHITE:
-        return ((pawns(board) & white_pieces(board)) << 7 & nnot(FILE_H))
+        return NE_one(pawns(board) & get_colored_pieces(board, color))
     if color == BLACK:
-        return ((pawns(board) & black_pieces(board)) >> 9 & nnot(FILE_H))
+        return SE_one(pawns(board) & get_colored_pieces(board, color))
 
 def pawn_west_attacks(board, color):
     if color == WHITE:
-        return ((pawns(board) & white_pieces(board)) << 9 & nnot(FILE_A))
+        return NW_one(pawns(board) & get_colored_pieces(board, color))
     if color == BLACK:
-        return ((pawns(board) & black_pieces(board)) >> 7 & nnot(FILE_A))
+        return SW_one(pawns(board) & get_colored_pieces(board, color))
 
 def pawn_double_attacks(board, color):
     return pawn_east_attacks(board, color) & pawn_west_attacks(board, color)
@@ -249,10 +248,7 @@ def knights(board):
     return list2int([ i&PIECE_MASK == KNIGHT for i in board ])
 
 def knight_moves(board, color):
-    if color == WHITE:
-        return knight_attacks(knights(board) & white_pieces(board)) & nnot(white_pieces(board))
-    if color == BLACK:
-        return knight_attacks(knights(board) & black_pieces(board)) & nnot(black_pieces(board))
+    return knight_attacks(knights(board) & get_colored_pieces(board, color)) & nnot(get_colored_pieces(board, color))
 
 def knight_attacks(bitboard):
     return knight_NNE(bitboard) | \
@@ -294,10 +290,7 @@ def kings(board):
     return list2int([ i&PIECE_MASK == KING for i in board ])
 
 def king_moves(board, color):
-    if color == WHITE:
-        return king_attacks(kings(board) & white_pieces(board)) & nnot(white_pieces(board))
-    if color == BLACK:
-        return king_attacks(kings(board) & black_pieces(board)) & nnot(black_pieces(board))
+    return king_attacks(kings(board) & get_colored_pieces(board, color)) & nnot(get_colored_pieces(board, color))
 
 def king_attacks(bitboard):
     king_atks = bitboard | east_one(bitboard) | west_one(bitboard)
@@ -507,13 +500,17 @@ def queen_moves(board, color):
     bitboard = queens(board)&get_colored_pieces(board, color)
     return queen_attacks(bitboard, board, color)
 
-def all_moves(board, color): # FIXME: add castling?
-    return pawn_moves(board, color) | \
+def pseudo_legal_moves(board, color): # FIXME: add castling?
+    return pawn_moves(board, color)   | \
            knight_moves(board, color) | \
            bishop_moves(board, color) | \
-           rook_moves(board, color) | \
-           queen_moves(board, color) | \
+           rook_moves(board, color)   | \
+           queen_moves(board, color)  | \
            king_moves(board, color) 
+
+
+
+
 
 
 TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KING,  WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
@@ -526,6 +523,11 @@ TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KING, 
                BLACK|ROOK, EMPTY,        EMPTY,        EMPTY,       BLACK|KING,  BLACK|BISHOP, BLACK|KNIGHT, BLACK|ROOK ]
 
 print_board(TEST_BOARD)
+# print_bitboard(empty_squares(TEST_BOARD))
+# print_bitboard(occupied_squares(TEST_BOARD))
+# print_bitboard(pawn_attacks(TEST_BOARD, WHITE))
+# print_bitboard(pawn_double_attacks(TEST_BOARD, WHITE))
+# print_bitboard(pawn_captures(TEST_BOARD, WHITE))
 # print_bitboard(king_moves(TEST_BOARD, BLACK) | pawn_moves(TEST_BOARD, WHITE))
 # print_bitboard(knight_moves(TEST_BOARD, BLACK))
 # print_bitboard(rooks(TEST_BOARD) | bishops(TEST_BOARD))
@@ -541,4 +543,4 @@ print_board(TEST_BOARD)
 # print_bitboard(queen_attacks(queens(TEST_BOARD)&black_pieces(TEST_BOARD), TEST_BOARD, BLACK))
 # print_bitboard(queen_moves(TEST_BOARD, BLACK))
 # print_bitboard(king_moves(TEST_BOARD, WHITE))
-print_bitboard(all_moves(TEST_BOARD, WHITE)&black_pieces(TEST_BOARD))
+# print_bitboard(pseudo_legal_moves(TEST_BOARD, WHITE)&get_colored_pieces(TEST_BOARD, BLACK))
