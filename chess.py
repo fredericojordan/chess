@@ -290,6 +290,16 @@ def knight_fill(bitboard, n):
         fill |= knight_attacks(fill)
     return fill
 
+def knight_distance(pos1, pos2):
+    init_bitboard = single_pos(pos1)
+    end_bitboard = single_pos(pos2)
+    fill = init_bitboard
+    dist = 0
+    while fill & end_bitboard == 0:
+        dist += 1
+        fill = knight_fill(init_bitboard, dist)
+    return dist
+    
 # ========== KING ==========
 
 def kings(board):
@@ -551,3 +561,5 @@ print_board(TEST_BOARD)
 # print_bitboard(king_moves(TEST_BOARD, WHITE))
 # print_bitboard(pseudo_legal_moves(TEST_BOARD, WHITE)&get_colored_pieces(TEST_BOARD, BLACK))
 # print_bitboard(knight_fill(single_pos('a1'), 2))
+
+print(knight_distance('a1', 'h8'))
