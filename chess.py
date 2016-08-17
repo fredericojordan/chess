@@ -284,6 +284,12 @@ def knight_SSE(bitboard):
 def knight_SSW(bitboard):
     return bitboard >> 17 & nnot(FILE_H)
 
+def knight_fill(bitboard, n):
+    fill = bitboard
+    for _ in range(n):
+        fill |= knight_attacks(fill)
+    return fill
+
 # ========== KING ==========
 
 def kings(board):
@@ -544,3 +550,4 @@ print_board(TEST_BOARD)
 # print_bitboard(queen_moves(TEST_BOARD, BLACK))
 # print_bitboard(king_moves(TEST_BOARD, WHITE))
 # print_bitboard(pseudo_legal_moves(TEST_BOARD, WHITE)&get_colored_pieces(TEST_BOARD, BLACK))
+# print_bitboard(knight_fill(single_pos('a1'), 2))
