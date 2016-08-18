@@ -81,13 +81,15 @@ EMPTY_BOARD = [ EMPTY for _ in range(64) ]
 # ========== GAME ==========
 
 class Game:
-    def __init__(self, board=INITIAL_BOARD, to_move=WHITE):
-        self.board = board 
-        self.to_move = to_move
-        self.ep = EMPTY_BOARD
+    def __init__(self, FEN=''):
+        self.board = INITIAL_BOARD 
+        self.to_move = WHITE
+        self.ep = 0
         self.castling_rights = FULL_CASTLING_RIGHTS
         self.halfmove_clock = 0
         self.fullmove_number = 1
+        if FEN != '':
+            self.load_FEN(FEN)
         
     def increase_halfmove_clock(self):
         self.halfmove_clock += 1
@@ -139,6 +141,96 @@ class Game:
             self.remove_castling_rights(color)
             return True
         return False
+    
+    def to_FEN(self):
+        FEN_str = ''
+        
+        for i in range(len(RANKS)):
+            first = len(self.board) - 8*(i+1)
+            empty_sqrs = 0
+            for fille in range(len(FILES)):
+                piece = self.board[first+fille]
+                if piece&PIECE_MASK == EMPTY:
+                    empty_sqrs += 1
+                else:
+                    if empty_sqrs > 0:
+                        FEN_str += '{}'.format(empty_sqrs)
+                    FEN_str += '{}'.format(piece_str(piece))
+                    empty_sqrs = 0
+            if empty_sqrs > 0:
+                FEN_str += '{}'.format(empty_sqrs)
+            FEN_str += '/'
+        FEN_str = FEN_str[:-1] + ' '
+        
+        if self.to_move == WHITE:
+            FEN_str += 'w '
+        if self.to_move == BLACK:
+            FEN_str += 'b '
+            
+        if self.castling_rights & WHITE_KINGSIDE_CASTLE:
+            FEN_str += 'K'
+        if self.castling_rights & WHITE_QUEENSIDE_CASTLE:
+            FEN_str += 'Q'
+        if self.castling_rights & BLACK_KINGSIDE_CASTLE:
+            FEN_str += 'k'
+        if self.castling_rights & BLACK_QUEENSIDE_CASTLE:
+            FEN_str += 'q'
+        if self.castling_rights == 0:
+            FEN_str += '-'
+        FEN_str += ' '
+            
+        if self.ep == 0:
+            FEN_str += '-'
+        else:
+            FEN_str += encode_position(self.ep)
+        
+        FEN_str += ' {}'.format(self.halfmove_clock)
+        FEN_str += ' {}'.format(self.fullmove_number)
+        return FEN_str
+    
+    def load_FEN(self, FEN_str):
+        FEN_list = FEN_str.split(' ')
+        
+        board_str = FEN_list[0]
+        rank_list = board_str.split('/')
+        rank_list.reverse()
+        self.board = []
+        
+        for rank in rank_list:
+            rank_pieces = []
+            for p in rank:
+                if p.isnumeric():
+                    for _ in range(int(p)):
+                        rank_pieces.append(EMPTY)
+                else:
+                    rank_pieces.append(piece_code(p))
+            self.board.extend(rank_pieces)
+        
+        to_move_str = FEN_list[1].lower()
+        if to_move_str == 'w':
+            self.to_move = WHITE
+        if to_move_str == 'b':
+            self.to_move = BLACK
+        
+        castling_rights_str = FEN_list[2]
+        self.castling_rights = 0
+        if castling_rights_str.find('K') >= 0:
+            self.castling_rights |= WHITE_KINGSIDE_CASTLE
+        if castling_rights_str.find('Q') >= 0:
+            self.castling_rights |= WHITE_QUEENSIDE_CASTLE
+        if castling_rights_str.find('k') >= 0:
+            self.castling_rights |= BLACK_KINGSIDE_CASTLE
+        if castling_rights_str.find('q') >= 0:
+            self.castling_rights |= BLACK_QUEENSIDE_CASTLE 
+        
+        ep_str = FEN_list[3]
+        if ep_str == '-':
+            self.ep = 0
+        else:
+            self.ep = single_pos(ep_str)
+        
+        self.halfmove_clock = int(FEN_list[4])
+        self.fullmove_number = int(FEN_list[5])
 
 # ==========================
 
@@ -156,6 +248,13 @@ def parse_pos(position):
 
 def single_pos(position):
     return 0b1 << parse_pos(position)
+
+def encode_position(bitboard):
+    for i in range(64):
+        if (bitboard >> i) & 0b1:
+            fille = i%8
+            rank = int(i/8)
+            return '{}{}'.format(FILES[fille], RANKS[rank])
 
 def single_gen(bitboard):
     for i in range(64):
@@ -194,6 +293,21 @@ def piece_str(piece):
                       BLACK|PAWN:  'p',
                       EMPTY:       '.' }
     return piece_strings[ piece & (PIECE_MASK|COLOR_MASK) ]
+
+def piece_code(string):
+    piece_codes = { 'K':WHITE|KING,
+                    'Q':WHITE|QUEEN,
+                    'R':WHITE|ROOK,
+                    'B':WHITE|BISHOP,
+                    'N':WHITE|KNIGHT,
+                    'P':WHITE|PAWN,
+                    'k':BLACK|KING,
+                    'q':BLACK|QUEEN,
+                    'r':BLACK|ROOK,
+                    'b':BLACK|BISHOP,
+                    'n':BLACK|KNIGHT,
+                    'p':BLACK|PAWN }
+    return piece_codes[string]
     
 def print_board(board):
     print('')
@@ -681,7 +795,7 @@ test_board = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,      
                BLACK|PAWN, BLACK|PAWN,   BLACK|PAWN,   EMPTY,       EMPTY,       EMPTY,        BLACK|PAWN,   BLACK|PAWN,
                BLACK|ROOK, EMPTY,        EMPTY,        EMPTY,       BLACK|KING,  BLACK|BISHOP, BLACK|KNIGHT, BLACK|ROOK ]
 
-print_board(test_board)
+# print_board(test_board)
 # print_bitboard(empty_squares(test_board))
 # print_bitboard(occupied_squares(test_board))
 # print_bitboard(pawn_attacks(get_pawns(test_board, WHITE), test_board, WHITE))
@@ -715,7 +829,7 @@ print_board(test_board)
 # print(count_attacks(single_pos('B3'), test_board, WHITE))
 # print(count_attacks(single_pos('B3'), test_board, BLACK))
 # print(bin(FULL_CASTLING_RIGHTS))
-# game = Game(test_board, BLACK)
+# game = Game('r3kbnr/ppp3pp/3pqp2/8/1n5P/1b2K1P1/PPPPPP2/RNBQ1BNR b KQkq - 0 1')
 # print(can_castle_kingside(game, WHITE))
 # print(can_castle_queenside(game, WHITE))
 # print(can_castle_kingside(game, BLACK))
@@ -727,3 +841,7 @@ print_board(test_board)
 # print_board(game.board)
 # print_board(move_piece(test_board, 'g1', 'f3'))
 # print_board(move_piece(test_board, 'e2', 'f3'))
+# print(game.to_FEN())
+game = Game('1r1q2k1/B4p1p/4r1p1/3n2P1/b4P2/7P/8/3R2K1 w - - 1 28')
+print_board(game.board)
+print(game.to_FEN())
