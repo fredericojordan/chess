@@ -512,7 +512,7 @@ def is_attacked(target, board, color):
     return pseudo_legal_moves(board, color)&target != 0
 
 def is_check(board, color):
-    return is_attacked(get_king(board, color), TEST_BOARD, opposing_color(color))
+    return is_attacked(get_king(board, color), board, opposing_color(color))
 
 def count_attacks(target, board, attacking_color):
     attack_count = 0
