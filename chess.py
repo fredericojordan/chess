@@ -318,6 +318,17 @@ def print_board(board):
             rank_str += '{} '.format(piece_str(board[first+fille]))
         print(rank_str)
     print('  a b c d e f g h')
+
+def print_rotated_board(board):
+    r_board = rotate_board(board)
+    print('')
+    for i in range(len(RANKS)):
+        rank_str = str(i+1) + ' '
+        first = len(r_board) - 8*(i+1)
+        for fille in range(len(FILES)):
+            rank_str += '{} '.format(piece_str(r_board[first+fille]))
+        print(rank_str)
+    print('  h g f e d c b a')
     
 def print_bitboard(bitboard):
     print('')
@@ -365,6 +376,11 @@ def list2int(lst):
 
 def nnot(bitboard):
     return ~bitboard & ALL_SQUARES
+
+def rotate_board(board):
+    rotated_board = deepcopy(board)
+    rotated_board.reverse()
+    return rotated_board
 
 def east_one(bitboard):
     return (bitboard << 1) & nnot(FILE_A)
@@ -844,4 +860,5 @@ test_board = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,      
 # print(game.to_FEN())
 game = Game('1r1q2k1/B4p1p/4r1p1/3n2P1/b4P2/7P/8/3R2K1 w - - 1 28')
 print_board(game.board)
+print_rotated_board(game.board)
 print(game.to_FEN())
