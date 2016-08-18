@@ -69,15 +69,21 @@ INITIAL_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KIN
 
 EMPTY_BOARD = [ EMPTY for _ in range(64) ]
 
+INITIAL_GAME = { 'board': INITIAL_BOARD,
+                 'to_move': WHITE,
+                 'epsquare': EMPTY_BOARD, # maybe use bitmask?
+                 'halfmove_clock': 0,
+                 'fullmove_number': 1 }
+
 def get_piece(board, bitboard):
     for i in range(64):
         if (bitboard >> i) & 0b1:
             return board[i]
 
 def parse_pos(position):
-    file = FILES.index(position[0])
+    fille = FILES.index(position[0])
     rank = RANKS.index(position[1])
-    return 8*rank + file
+    return 8*rank + fille
 
 def single_pos(position):
     return 0b1 << parse_pos(position)
@@ -119,8 +125,8 @@ def print_board(board):
     for i in range(len(RANKS)):
         rank_str = str(8-i) + ' '
         first = len(board) - 8*(i+1)
-        for file in range(len(FILES)):
-            rank_str += '{} '.format(piece_str(board[first+file]))
+        for fille in range(len(FILES)):
+            rank_str += '{} '.format(piece_str(board[first+fille]))
         print(rank_str)
     print('  a b c d e f g h')
     
@@ -128,8 +134,8 @@ def print_bitboard(bitboard):
     print('')
     for rank in range(len(RANKS)):
         rank_str = str(8-rank) + ' '
-        for file in range(len(FILES)):
-            if (bitboard >> (file + (7-rank)*8)) & 0b1:
+        for fille in range(len(FILES)):
+            if (bitboard >> (fille + (7-rank)*8)) & 0b1:
                 rank_str += '# '
             else:
                 rank_str += '. '
@@ -304,6 +310,9 @@ def knight_distance(pos1, pos2):
 
 def kings(board):
     return list2int([ i&PIECE_MASK == KING for i in board ])
+
+def get_king(board, color):
+    return kings(board)&get_colored_pieces(board, color)
 
 def king_moves(board, color):
     return king_attacks(kings(board) & get_colored_pieces(board, color)) & nnot(get_colored_pieces(board, color))
@@ -522,16 +531,24 @@ def pseudo_legal_moves(board, color): # FIXME: add castling?
            bishop_moves(board, color) | \
            rook_moves(board, color)   | \
            queen_moves(board, color)  | \
-           king_moves(board, color) 
+           king_moves(board, color)
+
+def is_attacked_by(bitboard, board, color):
+    return pseudo_legal_moves(board, color)&bitboard != 0
+
+def is_check_on(board, color):
+    if color == WHITE:
+        return is_attacked_by(get_king(board, WHITE), TEST_BOARD, BLACK)
+    if color == BLACK:
+        return is_attacked_by(get_king(board, BLACK), TEST_BOARD, WHITE)
+
+def is_check(board):
+    return is_check_on(board, WHITE) | is_check_on(board, BLACK) 
 
 
-
-
-
-
-TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KING,  WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
+TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,       WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
                WHITE|PAWN, WHITE|PAWN,   WHITE|PAWN,   WHITE|PAWN,  WHITE|PAWN,  WHITE|PAWN,   EMPTY,        EMPTY,
-               EMPTY,      BLACK|BISHOP, EMPTY,        EMPTY,       EMPTY,       EMPTY,        WHITE|PAWN,   EMPTY,
+               EMPTY,      BLACK|BISHOP, EMPTY,        EMPTY,       WHITE|KING,  EMPTY,        WHITE|PAWN,   EMPTY,
                EMPTY,      BLACK|KNIGHT, EMPTY,        EMPTY,       EMPTY,       EMPTY,        EMPTY,        WHITE|PAWN,
                EMPTY,      EMPTY,        EMPTY,        EMPTY,       EMPTY,       EMPTY,        EMPTY,        EMPTY,
                EMPTY,      EMPTY,        EMPTY,        BLACK|PAWN,  EMPTY,       BLACK|PAWN,   EMPTY,        EMPTY,
@@ -561,5 +578,8 @@ print_board(TEST_BOARD)
 # print_bitboard(king_moves(TEST_BOARD, WHITE))
 # print_bitboard(pseudo_legal_moves(TEST_BOARD, WHITE)&get_colored_pieces(TEST_BOARD, BLACK))
 # print_bitboard(knight_fill(single_pos('a1'), 2))
-
-print(knight_distance('a1', 'h8'))
+# print(knight_distance('a1', 'h8'))
+# print_bitboard(pseudo_legal_moves(TEST_BOARD, BLACK))
+# print(is_check_on(TEST_BOARD, WHITE))
+# print(is_check_on(TEST_BOARD, BLACK))
+# print(is_check(TEST_BOARD))
