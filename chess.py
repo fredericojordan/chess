@@ -17,26 +17,32 @@ bit_boards = 0b(h8)(g8)...(b1)(a1)
 board = [ a1, b1, ..., g8, h8 ]
 
 '''
-COLOR_MASK = 1 << 7
-WHITE = 0 << 7
-BLACK = 1 << 7
+from copy import deepcopy
+COLOR_MASK = 1 << 4
+WHITE = 0 << 4
+BLACK = 1 << 4
 
 PIECE_MASK = 0b111
-EMPTY = 0
-PAWN = 1
+EMPTY  = 0
+PAWN   = 1
 KNIGHT = 2
 BISHOP = 3
-ROOK = 4
-QUEEN = 5
-KING = 6
+ROOK   = 4
+QUEEN  = 5
+KING   = 6
 
 PIECE_TYPES = [ PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING ]
-
-HAS_MOVED_FLAG = 1 << 3
-CASTLE_FLAG = 1 << 4
+PIECE_VALUES = { PAWN:100, KNIGHT:300, BISHOP:300, ROOK:500, QUEEN:900, KING:420000 }
 
 FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 RANKS = ['1', '2', '3', '4', '5', '6', '7', '8']
+
+WHITE_KINGSIDE_CASTLE  = 0b1 << 0
+WHITE_QUEENSIDE_CASTLE = 0b1 << 1
+BLACK_KINGSIDE_CASTLE  = 0b1 << 2
+BLACK_QUEENSIDE_CASTLE = 0b1 << 3
+
+FULL_CASTLING_RIGHTS = WHITE_KINGSIDE_CASTLE|WHITE_QUEENSIDE_CASTLE|BLACK_KINGSIDE_CASTLE|BLACK_QUEENSIDE_CASTLE
 
 ALL_SQUARES    = 0xFFFFFFFFFFFFFFFF
 FILE_A         = 0x0101010101010101
@@ -71,11 +77,72 @@ INITIAL_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KIN
 
 EMPTY_BOARD = [ EMPTY for _ in range(64) ]
 
-INITIAL_GAME = { 'board': INITIAL_BOARD,
-                 'to_move': WHITE,
-                 'epsquare': EMPTY_BOARD, # maybe use bitmask?
-                 'halfmove_clock': 0,
-                 'fullmove_number': 1 }
+
+# ========== GAME ==========
+
+class Game:
+    def __init__(self, board=INITIAL_BOARD, to_move=WHITE):
+        self.board = board 
+        self.to_move = to_move
+        self.ep = EMPTY_BOARD
+        self.castling_rights = FULL_CASTLING_RIGHTS
+        self.halfmove_clock = 0
+        self.fullmove_number = 1
+        
+    def increase_halfmove_clock(self):
+        self.halfmove_clock += 1
+        
+    def reset_halfmove_clock(self):
+        self.halfmove_clock = 0
+        
+    def increase_fullmove_number(self):
+        self.halfmove_clock += 1
+        
+    def next_to_move(self):
+        self.to_move = opposing_color(self.to_move)
+        
+    def make_move(self, move_code): # TODO: remaining moves
+        success = False
+        reset_halfmove = False
+        
+        if move_code.upper() == 'O-O' or move_code == '0-0':
+            success = self.make_castle_kingside(self.to_move)
+        if move_code.upper() == 'O-O-O' or move_code == '0-0-0':
+            success = self.make_castle_queenside(self.to_move)
+        
+        if success:
+            self.increase_halfmove_clock()
+            if self.to_move == BLACK:
+                self.increase_fullmove_number()
+            self.next_to_move()
+        if reset_halfmove:
+            self.reset_halfmove_clock()
+
+        return success 
+        
+    def remove_castling_rights(self, color):
+        if color == WHITE:
+            self.castling_rights &= BLACK_KINGSIDE_CASTLE|BLACK_QUEENSIDE_CASTLE
+        if color == BLACK:
+            self.castling_rights &= WHITE_KINGSIDE_CASTLE|WHITE_QUEENSIDE_CASTLE
+
+    def make_castle_kingside(self, color):
+        if can_castle_kingside(self, color) and self.to_move == color:
+            self.board = castle_kingside(self.board, color)
+            self.remove_castling_rights(color)
+            return True
+        return False
+
+    def make_castle_queenside(self, color):
+        if can_castle_queenside(self, color) and self.to_move == color:
+            self.board = castle_queenside(self.board, color)
+            self.remove_castling_rights(color)
+            return True
+        return False
+
+# ==========================
+
+
 
 def get_piece(board, bitboard):
     for i in range(64):
@@ -209,6 +276,12 @@ def SE_one(bitboard):
 def SW_one(bitboard):
     return south_one(west_one(bitboard))
 
+def move_piece(board, leaving_position, arriving_position):
+    new_board = deepcopy(board)
+    new_board[parse_pos(arriving_position)] = new_board[parse_pos(leaving_position)] 
+    new_board[parse_pos(leaving_position)] = EMPTY
+    return new_board
+
 # ========== PAWN ==========
 
 def get_pawns(board, color):
@@ -323,6 +396,68 @@ def king_attacks(moving_piece):
     king_atks = moving_piece | east_one(moving_piece) | west_one(moving_piece)
     king_atks |= north_one(king_atks) | south_one(king_atks)
     return king_atks & nnot(moving_piece)
+
+def can_castle_kingside(game, color):
+    if color == WHITE:
+        return (game.castling_rights & WHITE_KINGSIDE_CASTLE) and \
+                game.board[parse_pos('f1')] == EMPTY and \
+                game.board[parse_pos('g1')] == EMPTY and \
+                (not is_attacked(single_pos('e1'), game.board, opposing_color(color))) and \
+                (not is_attacked(single_pos('f1'), game.board, opposing_color(color))) and \
+                (not is_attacked(single_pos('g1'), game.board, opposing_color(color)))
+    if color == BLACK:
+        return (game.castling_rights & BLACK_KINGSIDE_CASTLE) and \
+                game.board[parse_pos('f8')] == EMPTY and \
+                game.board[parse_pos('g8')] == EMPTY and \
+                (not is_attacked(single_pos('e8'), game.board, opposing_color(color))) and \
+                (not is_attacked(single_pos('f8'), game.board, opposing_color(color))) and \
+                (not is_attacked(single_pos('g8'), game.board, opposing_color(color)))
+
+def castle_kingside(board, color):
+    return_board = deepcopy(board)
+    if color == WHITE:
+        return_board[parse_pos('e1')] = EMPTY
+        return_board[parse_pos('f1')] = WHITE|ROOK
+        return_board[parse_pos('g1')] = WHITE|KING
+        return_board[parse_pos('h1')] = EMPTY
+    if color == BLACK:
+        return_board[parse_pos('e8')] = EMPTY
+        return_board[parse_pos('f8')] = BLACK|ROOK
+        return_board[parse_pos('g8')] = BLACK|KING
+        return_board[parse_pos('h8')] = EMPTY
+    return return_board
+
+def can_castle_queenside(game, color):
+    if color == WHITE:
+        return (game.castling_rights & WHITE_QUEENSIDE_CASTLE) and \
+                game.board[parse_pos('b1')] == EMPTY and \
+                game.board[parse_pos('c1')] == EMPTY and \
+                game.board[parse_pos('d1')] == EMPTY and \
+                (not is_attacked(single_pos('c1'), game.board, opposing_color(color))) and \
+                (not is_attacked(single_pos('d1'), game.board, opposing_color(color))) and \
+                (not is_attacked(single_pos('e1'), game.board, opposing_color(color)))
+    if color == BLACK:
+        return (game.castling_rights & BLACK_QUEENSIDE_CASTLE) and \
+                game.board[parse_pos('b8')] == EMPTY and \
+                game.board[parse_pos('c8')] == EMPTY and \
+                game.board[parse_pos('d8')] == EMPTY and \
+                (not is_attacked(single_pos('c8'), game.board, opposing_color(color))) and \
+                (not is_attacked(single_pos('d8'), game.board, opposing_color(color))) and \
+                (not is_attacked(single_pos('e8'), game.board, opposing_color(color)))
+
+def castle_queenside(board, color):
+    return_board = deepcopy(board)
+    if color == WHITE:
+        return_board[parse_pos('e1')] = EMPTY
+        return_board[parse_pos('d1')] = WHITE|ROOK
+        return_board[parse_pos('c1')] = WHITE|KING
+        return_board[parse_pos('a1')] = EMPTY
+    if color == BLACK:
+        return_board[parse_pos('e8')] = EMPTY
+        return_board[parse_pos('d8')] = BLACK|ROOK
+        return_board[parse_pos('c8')] = BLACK|KING
+        return_board[parse_pos('a8')] = EMPTY
+    return return_board
 
 # ========== BISHOP ==========
 
@@ -509,7 +644,7 @@ def pseudo_legal_moves(board, color): # FIXME: add castling?
            king_moves(get_king(board, color), board, color)
 
 def is_attacked(target, board, color):
-    return pseudo_legal_moves(board, color)&target != 0
+    return count_attacks(target, board, color) > 0
 
 def is_check(board, color):
     return is_attacked(get_king(board, color), board, opposing_color(color))
@@ -537,7 +672,7 @@ def count_attacks(target, board, attacking_color):
     return attack_count
 
 
-TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,       WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
+test_board = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,       WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
                WHITE|PAWN, WHITE|PAWN,   WHITE|PAWN,   WHITE|PAWN,  WHITE|PAWN,  WHITE|PAWN,   EMPTY,        EMPTY,
                EMPTY,      BLACK|BISHOP, EMPTY,        EMPTY,       WHITE|KING,  EMPTY,        WHITE|PAWN,   EMPTY,
                EMPTY,      BLACK|KNIGHT, EMPTY,        EMPTY,       EMPTY,       EMPTY,        EMPTY,        WHITE|PAWN,
@@ -546,36 +681,49 @@ TEST_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,      
                BLACK|PAWN, BLACK|PAWN,   BLACK|PAWN,   EMPTY,       EMPTY,       EMPTY,        BLACK|PAWN,   BLACK|PAWN,
                BLACK|ROOK, EMPTY,        EMPTY,        EMPTY,       BLACK|KING,  BLACK|BISHOP, BLACK|KNIGHT, BLACK|ROOK ]
 
-print_board(TEST_BOARD)
-# print_bitboard(empty_squares(TEST_BOARD))
-# print_bitboard(occupied_squares(TEST_BOARD))
-# print_bitboard(pawn_attacks(get_pawns(TEST_BOARD, WHITE), TEST_BOARD, WHITE))
-# print_bitboard(pawn_double_attacks(get_pawns(TEST_BOARD, WHITE), TEST_BOARD, WHITE))
-# print_bitboard(pawn_captures(get_pawns(TEST_BOARD, WHITE), TEST_BOARD, WHITE))
-# print_bitboard(king_moves(get_king(TEST_BOARD, BLACK), TEST_BOARD, BLACK) | pawn_moves(get_pawns(TEST_BOARD, WHITE), TEST_BOARD, WHITE))
-# print_bitboard(knight_moves(get_knights(TEST_BOARD, BLACK), TEST_BOARD, BLACK))
-# print_bitboard(get_rooks(TEST_BOARD, WHITE) | get_bishops(TEST_BOARD, WHITE))
-# print_bitboard(rook_rays(get_queen(TEST_BOARD, BLACK)))
-# print_bitboard(queen_rays(get_queen(TEST_BOARD, WHITE)))
+print_board(test_board)
+# print_bitboard(empty_squares(test_board))
+# print_bitboard(occupied_squares(test_board))
+# print_bitboard(pawn_attacks(get_pawns(test_board, WHITE), test_board, WHITE))
+# print_bitboard(pawn_double_attacks(get_pawns(test_board, WHITE), test_board, WHITE))
+# print_bitboard(pawn_captures(get_pawns(test_board, WHITE), test_board, WHITE))
+# print_bitboard(king_moves(get_king(test_board, BLACK), test_board, BLACK) | pawn_moves(get_pawns(test_board, WHITE), test_board, WHITE))
+# print_bitboard(knight_moves(get_knights(test_board, BLACK), test_board, BLACK))
+# print_bitboard(get_rooks(test_board, WHITE) | get_bishops(test_board, WHITE))
+# print_bitboard(rook_rays(get_queen(test_board, BLACK)))
+# print_bitboard(queen_rays(get_queen(test_board, WHITE)))
 # print_bitboard(bishop_rays(single_pos('c5')))
 # print_bitboard(rook_rays(single_pos('f2')))
 # print_bitboard(queen_rays(single_pos('h4')))
 # print_bitboard(msb(ALL_SQUARES))
 # print_bitboard(lsb(ALL_SQUARES))
-# print_bitboard(rook_moves(get_queen(TEST_BOARD, WHITE), TEST_BOARD, WHITE))
-# print_bitboard(bishop_moves(get_bishops(TEST_BOARD, WHITE)&black_pieces(TEST_BOARD), TEST_BOARD, BLACK))
-# print_bitboard(queen_moves(get_queen(TEST_BOARD, WHITE)&black_pieces(TEST_BOARD), TEST_BOARD, BLACK))
-# print_bitboard(queen_moves(get_queen(TEST_BOARD, WHITE), TEST_BOARD, BLACK))
-# print_bitboard(king_moves(get_queen(TEST_BOARD, WHITE), TEST_BOARD, WHITE))
-# print_bitboard(pseudo_legal_moves(TEST_BOARD, WHITE)&get_colored_pieces(TEST_BOARD, BLACK))
-# print_bitboard(pseudo_legal_moves(TEST_BOARD, BLACK)&get_colored_pieces(TEST_BOARD, WHITE))
+# print_bitboard(rook_moves(get_queen(test_board, WHITE), test_board, WHITE))
+# print_bitboard(bishop_moves(get_bishops(test_board, WHITE)&black_pieces(test_board), test_board, BLACK))
+# print_bitboard(queen_moves(get_queen(test_board, WHITE)&black_pieces(test_board), test_board, BLACK))
+# print_bitboard(queen_moves(get_queen(test_board, WHITE), test_board, BLACK))
+# print_bitboard(king_moves(get_queen(test_board, WHITE), test_board, WHITE))
+# print_bitboard(pseudo_legal_moves(test_board, WHITE)&get_colored_pieces(test_board, BLACK))
+# print_bitboard(pseudo_legal_moves(test_board, BLACK)&get_colored_pieces(test_board, WHITE))
 # print_bitboard(knight_fill(single_pos('a1'), 2))
 # print(knight_distance('a1', 'h8'))
-# print_bitboard(pseudo_legal_moves(TEST_BOARD, BLACK))
-# print(is_check(TEST_BOARD, WHITE))
-# print(is_check(TEST_BOARD, BLACK))
-# print_bitboard(pawn_moves(single_pos('d2'), TEST_BOARD, WHITE))
-# print_bitboard(pseudo_legal_moves(TEST_BOARD, WHITE)&get_colored_pieces(TEST_BOARD, BLACK))
-# print_bitboard(pseudo_legal_moves(TEST_BOARD, BLACK)&get_colored_pieces(TEST_BOARD, WHITE))
-# print(count_attacks(single_pos('B3'), TEST_BOARD, WHITE))
-# print(count_attacks(single_pos('B3'), TEST_BOARD, BLACK))
+# print_bitboard(pseudo_legal_moves(test_board, BLACK))
+# print(is_check(test_board, WHITE))
+# print(is_check(test_board, BLACK))
+# print_bitboard(pawn_moves(single_pos('d2'), test_board, WHITE))
+# print_bitboard(pseudo_legal_moves(test_board, WHITE)&get_colored_pieces(test_board, BLACK))
+# print_bitboard(pseudo_legal_moves(test_board, BLACK)&get_colored_pieces(test_board, WHITE))
+# print(count_attacks(single_pos('B3'), test_board, WHITE))
+# print(count_attacks(single_pos('B3'), test_board, BLACK))
+# print(bin(FULL_CASTLING_RIGHTS))
+# game = Game(test_board, BLACK)
+# print(can_castle_kingside(game, WHITE))
+# print(can_castle_queenside(game, WHITE))
+# print(can_castle_kingside(game, BLACK))
+# print(can_castle_queenside(game, BLACK))
+# print(bin(game.castling_rights))
+# print(game.make_castle_queenside(WHITE))
+# print(game.make_castle_queenside(BLACK))
+# print(bin(game.castling_rights))
+# print_board(game.board)
+# print_board(move_piece(test_board, 'g1', 'f3'))
+# print_board(move_piece(test_board, 'e2', 'f3'))
