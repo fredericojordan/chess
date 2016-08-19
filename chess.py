@@ -199,7 +199,7 @@ class Game:
         for rank in rank_list:
             rank_pieces = []
             for p in rank:
-                if p.isnumeric():
+                if p.isdigit():
                     for _ in range(int(p)):
                         rank_pieces.append(EMPTY)
                 else:
