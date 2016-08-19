@@ -32,7 +32,7 @@ QUEEN  = 5
 KING   = 6
 
 PIECE_TYPES = [ PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING ]
-PIECE_VALUES = { PAWN:100, KNIGHT:300, BISHOP:300, ROOK:500, QUEEN:900, KING:420000 }
+PIECE_VALUES = { EMPTY:0, PAWN:100, KNIGHT:300, BISHOP:300, ROOK:500, QUEEN:900, KING:42000 }
 
 FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 RANKS = ['1', '2', '3', '4', '5', '6', '7', '8']
@@ -801,7 +801,20 @@ def count_attacks(target, board, attacking_color):
             attack_count += 1
     return attack_count
 
+def material_sum(board, color):
+    material = 0
+    for piece in board:
+        if piece&COLOR_MASK == color:
+            material += PIECE_VALUES[piece&PIECE_MASK]
+    return material/100
 
+
+def material_balance(board):
+    return material_sum(board, WHITE) - material_sum(board, BLACK)
+    
+    
+    
+    
 test_board = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,       WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
                WHITE|PAWN, WHITE|PAWN,   WHITE|PAWN,   WHITE|PAWN,  WHITE|PAWN,  WHITE|PAWN,   EMPTY,        EMPTY,
                EMPTY,      BLACK|BISHOP, EMPTY,        EMPTY,       WHITE|KING,  EMPTY,        WHITE|PAWN,   EMPTY,
@@ -862,3 +875,6 @@ game = Game('1r1q2k1/B4p1p/4r1p1/3n2P1/b4P2/7P/8/3R2K1 w - - 1 28')
 print_board(game.board)
 print_rotated_board(game.board)
 print(game.to_FEN())
+print(material_sum(game.board, WHITE))
+print(material_sum(game.board, BLACK))
+print(material_balance(game.board))
