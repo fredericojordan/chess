@@ -153,8 +153,22 @@ class Game:
 
         return success
     
-    def make_pawn_move(self, move_code): # TODO: move, set ep
-        return False
+    def make_pawn_move(self, move_code): # TODO: set ep, filter ambiguous
+        success = False
+        valid_count = 0
+        target_square = single_pos(move_code[-2:])
+        
+        for piece_pos in colored_piece_gen(self.board, PAWN, self.to_move):
+            if pawn_moves(piece_pos, self, self.to_move) & target_square:
+                valid_count += 1
+                leaving_square = piece_pos
+        
+        if valid_count == 1:
+            self.board = move_piece(self.board, leaving_square, target_square)
+            self.clear_ep_square()
+            success = True
+        
+        return success
     
     def make_king_move(self, move_code):
         success = False
@@ -725,7 +739,7 @@ def knight_distance(pos1, pos2):
 def get_king(board, color):
     return list2int([ i&(COLOR_MASK|PIECE_MASK) == color|KING for i in board ])
 
-def king_moves(moving_piece, board, color):
+def king_moves(moving_piece, board, color): # TODO: check for check
     return king_attacks(moving_piece) & nnot(get_colored_pieces(board, color))
 
 def king_attacks(moving_piece):
