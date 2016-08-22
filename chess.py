@@ -117,13 +117,13 @@ class Game:
         if move_code.upper() == 'O-O-O' or move_code == '0-0-0':
             success = self.make_castle_queenside()
             
-        piece_code = move_code[0].upper()
+        piece_code = move_code[0]
         target_square = single_pos(move_code[-2:])
         
         if get_piece(game.board, target_square)&PIECE_MASK != EMPTY:
             reset_halfmove = True
         
-        if piece_code.lower() in FILES or piece_code == 'P':
+        if piece_code in FILES or piece_code.upper() == 'P':
             success = self.make_pawn_move(move_code)
             if success:
                 reset_halfmove = True
@@ -1138,7 +1138,7 @@ test_board = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,      
 # game.make_move('Ne3')
 # print_board(game.board)
 
-game = Game('rnbqkbnr/1pppppp1/8/5P2/8/Q6Q/1PP3P1/RNBQKBNR b KQkq - 0 1')
+game = Game('rnbqkbnr/1pppppp1/8/2p2P2/1P6/Q6Q/1PP2BP1/RNBQKBNR w KQkq - 0 1')
 while True:
     print_board(game.board)
     print(game.to_FEN())
