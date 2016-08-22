@@ -77,6 +77,8 @@ INITIAL_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KIN
 
 EMPTY_BOARD = [ EMPTY for _ in range(64) ]
 
+INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
 
 # ========== GAME ==========
 
@@ -1138,7 +1140,8 @@ test_board = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,      
 # game.make_move('Ne3')
 # print_board(game.board)
 
-game = Game('rnbqkbnr/1pppppp1/8/2p2P2/1P6/Q6Q/1PP2BP1/RNBQKBNR w KQkq - 0 1')
+# game = Game('rnbqkbnr/1pppppp1/8/2p2P2/1P6/Q6Q/1PP2BP1/RNBQKBNR w KQkq - 0 1')
+game = Game()
 while True:
     print_board(game.board)
     print(game.to_FEN())
