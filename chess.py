@@ -98,7 +98,7 @@ class Game:
         self.halfmove_clock = 0
         
     def increase_fullmove_number(self):
-        self.halfmove_clock += 1
+        self.fullmove_number += 1
         
     def next_to_move(self):
         self.to_move = opposing_color(self.to_move)
@@ -106,7 +106,7 @@ class Game:
     def clear_ep_square(self):
         self.ep = 0
         
-    def make_move(self, move_code): # TODO: remaining moves
+    def make_move(self, move_code):
         success = False
         reset_halfmove = False
         move_code = move_code.replace(" ", "")
@@ -153,7 +153,7 @@ class Game:
 
         return success
     
-    def make_pawn_move(self, move_code): # TODO: set ep
+    def make_pawn_move(self, move_code): # TODO: move, set ep
         return False
     
     def make_king_move(self, move_code):
@@ -190,21 +190,73 @@ class Game:
             success = True
         
 #         if valid_count > 1 and len(move_code) == 4:
-#             self.board[get_index(self.board, leaving_square)] = EMPTY
-#             self.board[get_index(self.board, target_square)] = self.to_move|QUEEN
 #             self.clear_ep_square()
 #             success = True
         
         return success
     
-    def make_rook_move(self, move_code):
-        return False
+    def make_rook_move(self, move_code): # TODO: remove castling rights
+        success = False
+        valid_count = 0
+        target_square = single_pos(move_code[-2:])
+        
+        for piece_pos in colored_piece_gen(self.board, ROOK, self.to_move):
+            if rook_moves(piece_pos, self.board, self.to_move) & target_square:
+                valid_count += 1
+                leaving_square = piece_pos
+        
+        if valid_count == 1:
+            self.board = move_piece(self.board, leaving_square, target_square)
+            self.clear_ep_square()
+            success = True
+        
+#         if valid_count > 1 and len(move_code) == 4:
+#             self.clear_ep_square()
+#             success = True
+        
+        return success
     
     def make_bishop_move(self, move_code):
-        return False
+        success = False
+        valid_count = 0
+        target_square = single_pos(move_code[-2:])
+        
+        for piece_pos in colored_piece_gen(self.board, BISHOP, self.to_move):
+            if bishop_moves(piece_pos, self.board, self.to_move) & target_square:
+                valid_count += 1
+                leaving_square = piece_pos
+        
+        if valid_count == 1:
+            self.board = move_piece(self.board, leaving_square, target_square)
+            self.clear_ep_square()
+            success = True
+        
+#         if valid_count > 1 and len(move_code) == 4:
+#             self.clear_ep_square()
+#             success = True
+        
+        return success
     
     def make_knight_move(self, move_code):
-        return False
+        success = False
+        valid_count = 0
+        target_square = single_pos(move_code[-2:])
+        
+        for piece_pos in colored_piece_gen(self.board, KNIGHT, self.to_move):
+            if knight_moves(piece_pos, self.board, self.to_move) & target_square:
+                valid_count += 1
+                leaving_square = piece_pos
+        
+        if valid_count == 1:
+            self.board = move_piece(self.board, leaving_square, target_square)
+            self.clear_ep_square()
+            success = True
+        
+#         if valid_count > 1 and len(move_code) == 4:
+#             self.clear_ep_square()
+#             success = True
+        
+        return success
         
     def remove_castling_rights(self, color):
         if color == WHITE:
@@ -498,6 +550,44 @@ def move_piece(board, leaving_position, arriving_position):
     new_board[get_index(arriving_position)] = new_board[get_index(leaving_position)] 
     new_board[get_index(leaving_position)] = EMPTY
     return new_board
+
+def get_rank(rank_num):
+    rank_num = int(rank_num)
+    if rank_num == 1:
+        return RANK_1
+    if rank_num == 2:
+        return RANK_2
+    if rank_num == 3:
+        return RANK_3
+    if rank_num == 4:
+        return RANK_4
+    if rank_num == 5:
+        return RANK_5
+    if rank_num == 6:
+        return RANK_6
+    if rank_num == 7:
+        return RANK_7
+    if rank_num == 8:
+        return RANK_8
+    
+def get_file(fille):
+    fille = fille.lower()
+    if fille == 'a':
+        return FILE_A
+    if fille == 'b':
+        return FILE_B
+    if fille == 'c':
+        return FILE_C
+    if fille == 'd':
+        return FILE_D
+    if fille == 'e':
+        return FILE_E
+    if fille == 'f':
+        return FILE_F
+    if fille == 'g':
+        return FILE_G
+    if fille == 'h':
+        return FILE_H
 
 # ========== PAWN ==========
 
@@ -980,6 +1070,13 @@ test_board = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,      
 # print_board(game.board)
 # print(game.make_move('Kg7'))
 # print_board(game.board)
-game = Game('1r1q2k1/B4p2/4r1p1/3n2Pp/b4P2/7P/8/3R2K1 w - h6 1 28')
-print_board(game.board)
-print(game.to_FEN())
+# game = Game('1r1q2k1/B4p2/4r1p1/3n2Pp/b4P2/7P/8/3R2K1 b - h6 1 28')
+# print_board(game.board)
+# game.make_move('Ne3')
+# print_board(game.board)
+
+game = Game()
+while True:
+    print_board(game.board)
+    print(game.to_FEN())
+    print(game.make_move(input()))
