@@ -179,40 +179,52 @@ class Game:
         valid_count = 0
         target_square = single_pos(move_code[-2:])
         
+        if len(move_code) == 4:
+            filter_squares = get_filter(move_code[1])
+        else:
+            filter_squares = ALL_SQUARES
+            
         for piece_pos in colored_piece_gen(self.board, QUEEN, self.to_move):
-            if queen_moves(piece_pos, self.board, self.to_move) & target_square:
-                valid_count += 1
-                leaving_square = piece_pos
+            if piece_pos & filter_squares:
+                if queen_moves(piece_pos, self.board, self.to_move) & target_square:
+                    valid_count += 1
+                    leaving_square = piece_pos
         
         if valid_count == 1:
             self.board = move_piece(self.board, leaving_square, target_square)
             self.clear_ep_square()
             success = True
         
-#         if valid_count > 1 and len(move_code) == 4:
-#             self.clear_ep_square()
-#             success = True
-        
         return success
     
-    def make_rook_move(self, move_code): # TODO: remove castling rights
+    def make_rook_move(self, move_code):
         success = False
         valid_count = 0
         target_square = single_pos(move_code[-2:])
         
+        if len(move_code) == 4:
+            filter_squares = get_filter(move_code[1])
+        else:
+            filter_squares = ALL_SQUARES
+        
         for piece_pos in colored_piece_gen(self.board, ROOK, self.to_move):
-            if rook_moves(piece_pos, self.board, self.to_move) & target_square:
-                valid_count += 1
-                leaving_square = piece_pos
+            if piece_pos & filter_squares:
+                if rook_moves(piece_pos, self.board, self.to_move) & target_square:
+                    valid_count += 1
+                    leaving_square = piece_pos
         
         if valid_count == 1:
             self.board = move_piece(self.board, leaving_square, target_square)
             self.clear_ep_square()
+            if leaving_square == single_pos('a1'):
+                self.castling_rights &= WHITE_KINGSIDE_CASTLE|BLACK_KINGSIDE_CASTLE|BLACK_QUEENSIDE_CASTLE
+            if leaving_square == single_pos('h1'):
+                self.castling_rights &= WHITE_QUEENSIDE_CASTLE|BLACK_KINGSIDE_CASTLE|BLACK_QUEENSIDE_CASTLE
+            if leaving_square == single_pos('a8'):
+                self.castling_rights &= WHITE_KINGSIDE_CASTLE|WHITE_QUEENSIDE_CASTLE|BLACK_KINGSIDE_CASTLE
+            if leaving_square == single_pos('h8'):
+                self.castling_rights &= WHITE_KINGSIDE_CASTLE|WHITE_QUEENSIDE_CASTLE|BLACK_QUEENSIDE_CASTLE
             success = True
-        
-#         if valid_count > 1 and len(move_code) == 4:
-#             self.clear_ep_square()
-#             success = True
         
         return success
     
@@ -221,19 +233,21 @@ class Game:
         valid_count = 0
         target_square = single_pos(move_code[-2:])
         
+        if len(move_code) == 4:
+            filter_squares = get_filter(move_code[1])
+        else:
+            filter_squares = ALL_SQUARES
+        
         for piece_pos in colored_piece_gen(self.board, BISHOP, self.to_move):
-            if bishop_moves(piece_pos, self.board, self.to_move) & target_square:
-                valid_count += 1
-                leaving_square = piece_pos
+            if piece_pos & filter_squares:
+                if bishop_moves(piece_pos, self.board, self.to_move) & target_square:
+                    valid_count += 1
+                    leaving_square = piece_pos
         
         if valid_count == 1:
             self.board = move_piece(self.board, leaving_square, target_square)
             self.clear_ep_square()
             success = True
-        
-#         if valid_count > 1 and len(move_code) == 4:
-#             self.clear_ep_square()
-#             success = True
         
         return success
     
@@ -242,19 +256,21 @@ class Game:
         valid_count = 0
         target_square = single_pos(move_code[-2:])
         
+        if len(move_code) == 4:
+            filter_squares = get_filter(move_code[1])
+        else:
+            filter_squares = ALL_SQUARES
+        
         for piece_pos in colored_piece_gen(self.board, KNIGHT, self.to_move):
-            if knight_moves(piece_pos, self.board, self.to_move) & target_square:
-                valid_count += 1
-                leaving_square = piece_pos
+            if piece_pos & filter_squares:
+                if knight_moves(piece_pos, self.board, self.to_move) & target_square:
+                    valid_count += 1
+                    leaving_square = piece_pos
         
         if valid_count == 1:
             self.board = move_piece(self.board, leaving_square, target_square)
             self.clear_ep_square()
             success = True
-        
-#         if valid_count > 1 and len(move_code) == 4:
-#             self.clear_ep_square()
-#             success = True
         
         return success
         
@@ -588,6 +604,12 @@ def get_file(fille):
         return FILE_G
     if fille == 'h':
         return FILE_H
+    
+def get_filter(filter_str):
+    if filter_str in FILES:
+        return get_file(filter_str)
+    if filter_str in RANKS:
+        return get_rank(filter_str)
 
 # ========== PAWN ==========
 
@@ -1075,8 +1097,9 @@ test_board = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,      
 # game.make_move('Ne3')
 # print_board(game.board)
 
-game = Game()
+game = Game('rnbqkbnr/1pppppp1/8/8/8/Q6Q/1PPPPPP1/RNBQKBNR w KQkq - 0 1')
 while True:
     print_board(game.board)
     print(game.to_FEN())
-    print(game.make_move(input()))
+    while not game.make_move(input()):
+        print('Invalid move!')
