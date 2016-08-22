@@ -167,8 +167,7 @@ class Game:
                 leaving_square = piece_pos
         
         if valid_count == 1:
-            self.board[get_index(leaving_square)] = EMPTY
-            self.board[get_index(target_square)] = self.to_move|KING
+            self.board = move_piece(self.board, leaving_square, target_square)
             self.remove_castling_rights(self.to_move)
             self.clear_ep_square()
             success = True
@@ -186,8 +185,7 @@ class Game:
                 leaving_square = piece_pos
         
         if valid_count == 1:
-            self.board[get_index(leaving_square)] = EMPTY
-            self.board[get_index(target_square)] = self.to_move|QUEEN
+            self.board = move_piece(self.board, leaving_square, target_square)
             self.clear_ep_square()
             success = True
         
@@ -323,7 +321,7 @@ class Game:
 
 
 def get_piece(board, bitboard):
-    return board[get_index(board, bitboard)]
+    return board[get_index(bitboard)]
         
 def get_index(bitboard):
     for i in range(64):
@@ -497,8 +495,8 @@ def SW_one(bitboard):
 
 def move_piece(board, leaving_position, arriving_position):
     new_board = deepcopy(board)
-    new_board[parse_pos(arriving_position)] = new_board[parse_pos(leaving_position)] 
-    new_board[parse_pos(leaving_position)] = EMPTY
+    new_board[get_index(arriving_position)] = new_board[get_index(leaving_position)] 
+    new_board[get_index(leaving_position)] = EMPTY
     return new_board
 
 # ========== PAWN ==========
@@ -982,9 +980,6 @@ test_board = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,      
 # print_board(game.board)
 # print(game.make_move('Kg7'))
 # print_board(game.board)
-# print(game.make_move('Kg6'))
-# print_board(game.board)
-# print(game.to_FEN())
 game = Game('1r1q2k1/B4p2/4r1p1/3n2Pp/b4P2/7P/8/3R2K1 w - h6 1 28')
 print_board(game.board)
 print(game.to_FEN())
