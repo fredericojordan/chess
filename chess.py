@@ -153,21 +153,38 @@ class Game:
 
         return success
     
-    def make_pawn_move(self, move_code): # TODO: set ep, filter ambiguous
+    def make_pawn_move(self, move_code):
         success = False
         valid_count = 0
         target_square = single_pos(move_code[-2:])
+        move_code = move_code.replace("p", "")
+        move_code = move_code.replace("P", "")
+        
+        if len(move_code) > 2:
+            filter_squares = get_filter(move_code[0])
+        else:
+            filter_squares = ALL_SQUARES
         
         for piece_pos in colored_piece_gen(self.board, PAWN, self.to_move):
-            if pawn_moves(piece_pos, self, self.to_move) & target_square:
-                valid_count += 1
-                leaving_square = piece_pos
+            if piece_pos & filter_squares:
+                if pawn_moves(piece_pos, self, self.to_move) & target_square:
+                    valid_count += 1
+                    leaving_square = piece_pos
         
         if valid_count == 1:
             self.board = move_piece(self.board, leaving_square, target_square)
+            
+            if target_square == self.ep:
+                if self.to_move == WHITE:
+                    self.board[get_index(south_one(self.ep))] = EMPTY
+                if self.to_move == BLACK:
+                    self.board[get_index(north_one(self.ep))] = EMPTY    
             self.clear_ep_square()
+            
+            if is_double_push(leaving_square, target_square):
+                self.ep = ep_square(leaving_square)
             success = True
-        
+            
         return success
     
     def make_king_move(self, move_code):
@@ -676,6 +693,16 @@ def pawn_west_attacks(attacking_piece, board, color):
 def pawn_double_attacks(attacking_piece, board, color):
     return pawn_east_attacks(attacking_piece, board, color) & pawn_west_attacks(attacking_piece, board, color)
 
+def is_double_push(leaving_square, target_square):
+    return (leaving_square&RANK_2 and target_square&RANK_4) or \
+           (leaving_square&RANK_7 and target_square&RANK_5)
+    
+def ep_square(leaving_square):
+    if leaving_square&RANK_2:
+        return north_one(leaving_square)
+    if leaving_square&RANK_7:
+        return south_one(leaving_square)
+
 # ========== KNIGHT ==========
 
 def get_knights(board, color):
@@ -1111,7 +1138,7 @@ test_board = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, EMPTY,      
 # game.make_move('Ne3')
 # print_board(game.board)
 
-game = Game('rnbqkbnr/1pppppp1/8/8/8/Q6Q/1PPPPPP1/RNBQKBNR w KQkq - 0 1')
+game = Game('rnbqkbnr/1pppppp1/8/5P2/8/Q6Q/1PP3P1/RNBQKBNR b KQkq - 0 1')
 while True:
     print_board(game.board)
     print(game.to_FEN())
