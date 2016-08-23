@@ -84,9 +84,9 @@ INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 class Game:
     def __init__(self, FEN=''):
-        self.board = INITIAL_BOARD 
+        self.board = INITIAL_BOARD
         self.to_move = WHITE
-        self.ep = 0
+        self.ep_square = 0
         self.castling_rights = FULL_CASTLING_RIGHTS
         self.halfmove_clock = 0
         self.fullmove_number = 1
@@ -106,7 +106,7 @@ class Game:
         self.to_move = opposing_color(self.to_move)
         
     def clear_ep_square(self):
-        self.ep = 0
+        self.ep_square = 0
         
     def make_move(self, move_code):
         success = False
@@ -176,15 +176,15 @@ class Game:
         if valid_count == 1:
             self.board = move_piece(self.board, leaving_square, target_square)
             
-            if target_square == self.ep:
+            if target_square == self.ep_square:
                 if self.to_move == WHITE:
-                    self.board[get_index(south_one(self.ep))] = EMPTY
+                    self.board[get_index(south_one(self.ep_square))] = EMPTY
                 if self.to_move == BLACK:
-                    self.board[get_index(north_one(self.ep))] = EMPTY    
+                    self.board[get_index(north_one(self.ep_square))] = EMPTY    
             self.clear_ep_square()
             
             if is_double_push(leaving_square, target_square):
-                self.ep = ep_square(leaving_square)
+                self.ep_square = ep_square(leaving_square)
             success = True
             
         return success
@@ -364,10 +364,10 @@ class Game:
             FEN_str += '-'
         FEN_str += ' '
             
-        if self.ep == 0:
+        if self.ep_square == 0:
             FEN_str += '-'
         else:
-            FEN_str += encode_position(self.ep)
+            FEN_str += encode_position(self.ep_square)
         
         FEN_str += ' {}'.format(self.halfmove_clock)
         FEN_str += ' {}'.format(self.fullmove_number)
@@ -410,9 +410,9 @@ class Game:
         
         ep_str = FEN_list[3]
         if ep_str == '-':
-            self.ep = 0
+            self.ep_square = 0
         else:
-            self.ep = single_pos(ep_str)
+            self.ep_square = single_pos(ep_str)
         
         self.halfmove_clock = int(FEN_list[4])
         self.fullmove_number = int(FEN_list[5])
@@ -660,9 +660,9 @@ def pawn_simple_captures(attacking_piece, board, color):
 
 def pawn_ep_captures(attacking_piece, game, color):
     if color == WHITE:
-        ep_squares = game.ep & RANK_6
+        ep_squares = game.ep_square & RANK_6
     if color == BLACK:
-        ep_squares = game.ep & RANK_3
+        ep_squares = game.ep_square & RANK_3
     return pawn_attacks(attacking_piece, game.board, color) & ep_squares
 
 def pawn_attacks(attacking_piece, board, color):
@@ -1015,7 +1015,7 @@ def queen_moves(moving_piece, board, color):
     return bishop_moves(moving_piece, board, color) | rook_moves(moving_piece, board, color)
 
 def pseudo_legal_moves(game, color): # FIXME: add castling?
-    return pawn_moves(get_pawns(game.board, color), game, color)     | \
+    return pawn_moves(get_pawns(game.board, color), game, color)           | \
            knight_moves(get_knights(game.board, color), game.board, color) | \
            bishop_moves(get_bishops(game.board, color), game.board, color) | \
            rook_moves(get_rooks(game.board, color), game.board, color)     | \
