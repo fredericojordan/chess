@@ -79,6 +79,21 @@ EMPTY_BOARD = [ EMPTY for _ in range(64) ]
 
 INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
+PIECE_CODES = { WHITE|KING:  'K',
+                WHITE|QUEEN: 'Q',
+                WHITE|ROOK:  'R',
+                WHITE|BISHOP:'B',
+                WHITE|KNIGHT:'N',
+                WHITE|PAWN:  'P',
+                BLACK|KING:  'k',
+                BLACK|QUEEN: 'q',
+                BLACK|ROOK:  'r',
+                BLACK|BISHOP:'b',
+                BLACK|KNIGHT:'n',
+                BLACK|PAWN:  'p',
+                EMPTY:       '.' }
+PIECE_CODES.update({v: k for k, v in PIECE_CODES.items()})
+
 
 # ========== GAME ==========
 
@@ -467,35 +482,10 @@ def opposing_color(color):
         return WHITE
 
 def piece_str(piece):
-    piece_strings = { WHITE|KING:  'K',
-                      WHITE|QUEEN: 'Q',
-                      WHITE|ROOK:  'R',
-                      WHITE|BISHOP:'B',
-                      WHITE|KNIGHT:'N',
-                      WHITE|PAWN:  'P',
-                      BLACK|KING:  'k',
-                      BLACK|QUEEN: 'q',
-                      BLACK|ROOK:  'r',
-                      BLACK|BISHOP:'b',
-                      BLACK|KNIGHT:'n',
-                      BLACK|PAWN:  'p',
-                      EMPTY:       '.' }
-    return piece_strings[ piece & (PIECE_MASK|COLOR_MASK) ]
+    return PIECE_CODES[ piece & (PIECE_MASK|COLOR_MASK) ]
 
 def piece_code(string):
-    piece_codes = { 'K':WHITE|KING,
-                    'Q':WHITE|QUEEN,
-                    'R':WHITE|ROOK,
-                    'B':WHITE|BISHOP,
-                    'N':WHITE|KNIGHT,
-                    'P':WHITE|PAWN,
-                    'k':BLACK|KING,
-                    'q':BLACK|QUEEN,
-                    'r':BLACK|ROOK,
-                    'b':BLACK|BISHOP,
-                    'n':BLACK|KNIGHT,
-                    'p':BLACK|PAWN }
-    return piece_codes[string]
+    return PIECE_CODES[string]
     
 def print_board(board):
     print('')
