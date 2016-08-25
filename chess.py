@@ -18,7 +18,7 @@ board = [ a1, b1, ..., g8, h8 ]
 
 '''
 from copy import deepcopy
-from random import randint
+from random import randint, choice
 from time import sleep
 import sys
 
@@ -938,13 +938,42 @@ def is_stalemate(game, color):
 
 def random_move(game, color): # TODO
     if count_legal_moves(game, color) == 0:
-        print('Game over for: ' + 'WHITE' if game.to_move == WHITE else 'BLACK' )
+        print('Game over! ' + 'BLACK' if game.to_move == WHITE else 'WHITE' + ' wins!' )
         sys.exit(0)
     move_num = randint(0, count_legal_moves(game, color))
     for move in legal_moves_gen(game, color):
         if move_num == 0:
             return move
         move_num -= 1
+        
+def material_move(game, color):
+    if count_legal_moves(game, color) == 0:
+        print('Game over! ' + 'BLACK' if game.to_move == WHITE else 'WHITE' + ' wins!' )
+        sys.exit(0)
+    
+    if color == WHITE:
+        best_material = -PIECE_VALUES[KING]
+        best_moves = []
+        for move in legal_moves_gen(game, color):
+            material = material_balance(make_move(game, move[0], move[1]).board)
+            if material > best_material:
+                best_material = material
+                best_moves = [move]
+            if material == best_material:
+                best_moves.append(move)
+        return choice(best_moves)
+        
+    if color == BLACK:
+        best_material = PIECE_VALUES[KING]
+        best_moves = []
+        for move in legal_moves_gen(game, color):
+            material = material_balance(make_move(game, move[0], move[1]).board)
+            if material < best_material:
+                best_material = material
+                best_moves = [move]
+            if material == best_material:
+                best_moves.append(move)
+        return choice(best_moves)
 
 
 
@@ -1045,10 +1074,10 @@ game = ChessGame()
 
 while True:
     print_board(game.board)
-#     game = make_move(game, str2bitboard(input()), str2bitboard(input()))
+    game = make_move(game, str2bitboard(input()), str2bitboard(input()))
     move = None
     while not move:
-        move = random_move(game, game.to_move)
+        move = material_move(game, game.to_move)
     print(PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bitboard2str(move[0])) + ' to ' + str(bitboard2str(move[1])))
     game = make_move(game, move[0], move[1])
     sleep(0.05)
