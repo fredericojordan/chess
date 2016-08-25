@@ -18,8 +18,8 @@ board = [ a1, b1, ..., g8, h8 ]
 
 '''
 from copy import deepcopy
-from random import randint, choice
-from time import sleep
+from random import choice
+# from time import sleep
 import sys
 
 COLOR_MASK = 1 << 4
@@ -594,7 +594,7 @@ def knight_distance(pos1, pos2):
 def get_king(board, color):
     return list2int([ i&(COLOR_MASK|PIECE_MASK) == color|KING for i in board ])
 
-def king_moves(moving_piece, board, color): # TODO: check for check
+def king_moves(moving_piece, board, color):
     return king_attacks(moving_piece) & nnot(get_colored_pieces(board, color))
 
 def king_attacks(moving_piece):
@@ -904,7 +904,7 @@ def legal_moves_gen(game, color):
         if is_legal_move(game, move):
             yield move
 
-def is_legal_move(game, move): # TODO
+def is_legal_move(game, move):
     new_game = make_move(game, move[0], move[1])
     return not is_check(new_game.board, game.to_move)
     
@@ -920,15 +920,25 @@ def is_checkmate(game, color):
 def is_stalemate(game, color):
     return count_legal_moves(game, color) == 0 and not is_check(game.board, color)
 
-def random_move(game, color): # TODO
+def insufficient_material(game): # TODO
+    return material_sum(game.board, WHITE) + material_sum(game.board, BLACK) == 2*PIECE_VALUES[KING]/100 
+
+def game_ended(game):
+    return is_checkmate(game, WHITE) or \
+           is_checkmate(game, BLACK) or \
+           is_stalemate(game, WHITE) or \
+           is_stalemate(game, BLACK) or \
+           insufficient_material(game)
+
+def random_move(game, color):
     if count_legal_moves(game, color) == 0:
         print('Game over! ' + 'BLACK' if game.to_move == WHITE else 'WHITE' + ' wins!' )
         sys.exit(0)
-    move_num = randint(0, count_legal_moves(game, color))
+        
+    legal_moves = []
     for move in legal_moves_gen(game, color):
-        if move_num == 0:
-            return move
-        move_num -= 1
+        legal_moves.append(move)
+    return choice(legal_moves)
         
 def material_move(game, color):
     if count_legal_moves(game, color) == 0:
@@ -1110,6 +1120,17 @@ game = ChessGame()
 while True:
     print_board(game.board)
      
+    if game_ended(game):
+        if is_stalemate(game, WHITE) or is_stalemate(game, BLACK):
+            print('Draw by stalemate')
+        if is_checkmate(game, WHITE):
+            print('BLACK wins!')
+        if is_checkmate(game, BLACK):
+            print('WHITE wins!')
+        if insufficient_material(game):
+            print('Draw by insufficient material!')
+        break
+       
     # PLAYER MOVE
     move = None
     while not move:
@@ -1119,11 +1140,21 @@ while True:
     game = game = make_move(game, move[0], move[1])
     
     print_board(game.board)
+    
+    if game_ended(game):
+        if is_stalemate(game, WHITE) or is_stalemate(game, BLACK):
+            print('Draw by stalemate')
+        if is_checkmate(game, WHITE):
+            print('BLACK wins!')
+        if is_checkmate(game, BLACK):
+            print('WHITE wins!')
+        if insufficient_material(game):
+            print('Draw by insufficient material!')
+        break
      
     # AI MOVE
-    move = None
-    while not move:
-        move = material_move(game, game.to_move)
+    move = material_move(game, game.to_move)
+#     move = random_move(game, game.to_move)
     print('\n' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bitboard2str(move[0])) + ' to ' + str(bitboard2str(move[1])))
     game = make_move(game, move[0], move[1])
     
