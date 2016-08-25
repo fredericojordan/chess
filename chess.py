@@ -82,6 +82,7 @@ INITIAL_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KIN
 EMPTY_BOARD = [ EMPTY for _ in range(64) ]
 
 INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+STROKES_YOLO = '1k6/2b1p3/Qp4N1/4r2P/2B2q2/1R6/2Pn2K1/8 w - - 0 1'
 
 PIECE_CODES = { WHITE|KING:  'K',
                 WHITE|QUEEN: 'Q',
@@ -348,14 +349,16 @@ def SE_one(bitboard):
 def SW_one(bitboard):
     return south_one(west_one(bitboard))
 
-def move_piece(board, leaving_position, arriving_position):
+def move_piece(board, move):
     new_board = deepcopy(board)
-    new_board[bitboard2index(arriving_position)] = new_board[bitboard2index(leaving_position)] 
-    new_board[bitboard2index(leaving_position)] = EMPTY
+    new_board[bitboard2index(move[1])] = new_board[bitboard2index(move[0])] 
+    new_board[bitboard2index(move[0])] = EMPTY
     return new_board
 
-def make_move(game, leaving_position, arriving_position):
+def make_move(game, move):
     new_game = deepcopy(game)
+    leaving_position = move[0]
+    arriving_position = move[1]
     
     # update_clocks
     new_game.halfmove_clock += 1
@@ -398,20 +401,20 @@ def make_move(game, leaving_position, arriving_position):
         new_game.castling_rights = remove_castling_rights(new_game, CASTLE_KINGSIDE_WHITE|CASTLE_QUEENSIDE_WHITE)
         if leaving_position == str2bitboard('e1'):
             if arriving_position == str2bitboard('g1'):
-                new_game.board = move_piece(new_game.board, str2bitboard('h1'), str2bitboard('f1'))
+                new_game.board = move_piece(new_game.board, (str2bitboard('h1'), str2bitboard('f1')))
             if arriving_position == str2bitboard('c1'):
-                new_game.board = move_piece(new_game.board, str2bitboard('a1'), str2bitboard('d1'))
+                new_game.board = move_piece(new_game.board, (str2bitboard('a1'), str2bitboard('d1')))
         
     if get_piece(new_game.board, leaving_position)&(PIECE_MASK|COLOR_MASK) == BLACK|KING:
         new_game.castling_rights = remove_castling_rights(new_game, CASTLE_KINGSIDE_BLACK|CASTLE_QUEENSIDE_BLACK)
         if leaving_position == str2bitboard('e8'):
             if arriving_position == str2bitboard('g8'):
-                new_game.board = move_piece(new_game.board, str2bitboard('h8'), str2bitboard('f8'))
+                new_game.board = move_piece(new_game.board, (str2bitboard('h8'), str2bitboard('f8')))
             if arriving_position == str2bitboard('c8'):
-                new_game.board = move_piece(new_game.board, str2bitboard('a8'), str2bitboard('d8'))
+                new_game.board = move_piece(new_game.board, (str2bitboard('a8'), str2bitboard('d8')))
     
     # update positions and next to move
-    new_game.board = move_piece(new_game.board, leaving_position, arriving_position)
+    new_game.board = move_piece(new_game.board, (leaving_position, arriving_position))
     new_game.to_move = opposing_color(new_game.to_move)
     return new_game
 
@@ -905,7 +908,7 @@ def legal_moves_gen(game, color):
             yield move
 
 def is_legal_move(game, move):
-    new_game = make_move(game, move[0], move[1])
+    new_game = make_move(game, move)
     return not is_check(new_game.board, game.to_move)
     
 def count_legal_moves(game, color):
@@ -920,7 +923,7 @@ def is_checkmate(game, color):
 def is_stalemate(game, color):
     return count_legal_moves(game, color) == 0 and not is_check(game.board, color)
 
-def insufficient_material(game): # TODO
+def insufficient_material(game): # TODO: other insufficient positions 
     return material_sum(game.board, WHITE) + material_sum(game.board, BLACK) == 2*PIECE_VALUES[KING]/100 
 
 def game_ended(game):
@@ -949,7 +952,7 @@ def material_move(game, color):
         best_material = -PIECE_VALUES[KING]
         best_moves = []
         for move in legal_moves_gen(game, color):
-            material = material_balance(make_move(game, move[0], move[1]).board)
+            material = material_balance(make_move(game, move).board)
             if material > best_material:
                 best_material = material
                 best_moves = [move]
@@ -961,7 +964,7 @@ def material_move(game, color):
         best_material = PIECE_VALUES[KING]
         best_moves = []
         for move in legal_moves_gen(game, color):
-            material = material_balance(make_move(game, move[0], move[1]).board)
+            material = material_balance(make_move(game, move).board)
             if material < best_material:
                 best_material = material
                 best_moves = [move]
@@ -1022,12 +1025,9 @@ def parse_move_code(game, move_code):
 
 # ========== TESTS ==========
 
-# strokes_game = ChessGame('1k6/2b1p3/Qp4N1/4r2P/2B2q2/1R6/2Pn2K1/8 w - - 0 1')
-
 # for move in legal_moves_gen(test_game, test_game.to_move):
-#     new_pos = make_move(test_game, move[0], move[1]).board
+#     new_pos = make_move(test_game, move).board
 #     print_board(new_pos)
-
 # test_game = ChessGame('r3kbnr/ppp3pp/3pqp2/8/1n5P/1b2K1P1/PPPPPP2/RNBQ1BNR w kq - 0 1')
 # print_board(test_game.board)
 # print_bitboard(empty_squares(test_game.board))
@@ -1073,8 +1073,8 @@ def parse_move_code(game, move_code):
 # print(game.make_castle_queenside())
 # print(bin(game.castling_rights))
 # print_board(game.board)
-# print_board(move_piece(test_game.board, str2bitboard('g1'), str2bitboard('f3')))
-# print_board(move_piece(test_game.board, str2bitboard('e2'), str2bitboard('f3')))
+# print_board(move_piece(test_game.board, (str2bitboard('g1'), str2bitboard('f3'))))
+# print_board(move_piece(test_game.board, (str2bitboard('e2'), str2bitboard('f3'))))
 # print(game.to_FEN())
 # game = ChessGame('1r1q2k1/B4p1p/4r1p1/3n2P1/b4P2/7P/8/3R2K1 w - - 1 28')
 # print_board(game.board)
@@ -1087,39 +1087,26 @@ def parse_move_code(game, move_code):
 # game = ChessGame('1r1q2k1/B4p2/4r1p1/3n2Pp/b4P2/7P/8/3R2K1 w KQ h6 1 28')
 # print_board(game.board)
 # print(game.to_FEN())
-# print(game.make_move('Kf2'))
-# print_board(game.board)
-# print(game.make_move('Kg7'))
-# print_board(game.board)
 # game = ChessGame('1r1q2k1/B4p2/4r1p1/3n2Pp/b4P2/7P/8/3R2K1 b - h6 1 28')
-# print_board(game.board)
-# game.make_move('Ne3')
 # print_board(game.board)
 # game = ChessGame('rnbqkbnr/1pppppp1/8/2p2P2/1P6/Q6Q/1PP2BP1/RNBQKBNR w KQkq - 0 1')
 # print_board(game.board)
-# game = ChessGame()
-# while True:
-#     print_board(game.board)
-#     print(game.to_FEN())
-#     while not game.make_move(input()):
-#         print('Invalid move!')
-# print_board(test_game.board)
-# print(test_game.to_FEN())
-# while True:
-#     print_board(make_move(test_game, str2bitboard(input()), str2bitboard(input())).board)
 # test_game = ChessGame('k7/8/1Q6/8/8/8/8/1R4K1 b - - 0 15')
-# 
 # print('checkmate = ' + str(is_checkmate(test_game, test_game.to_move)))
 # print('stalemate = ' + str(is_stalemate(test_game, test_game.to_move)))
 # print_board(test_game.board)
 # print(test_game.to_FEN())
 # game = ChessGame('rnbqkbnr/1pppppp1/3B4/2p2P2/1P1P4/Q6Q/1PP3P1/RNBQKBNR w KQkq - 0 1')
 
+# ========== /TESTS ==========
+
+
+
 game = ChessGame()
  
 while True:
     print_board(game.board)
-     
+      
     if game_ended(game):
         if is_stalemate(game, WHITE) or is_stalemate(game, BLACK):
             print('Draw by stalemate')
@@ -1130,14 +1117,14 @@ while True:
         if insufficient_material(game):
             print('Draw by insufficient material!')
         break
-       
+        
     # PLAYER MOVE
     move = None
     while not move:
         move = parse_move_code(game, input())
         if not move:
             print('Invalid move!')
-    game = game = make_move(game, move[0], move[1])
+    game = game = make_move(game, move)
     
     print_board(game.board)
     
@@ -1156,6 +1143,6 @@ while True:
     move = material_move(game, game.to_move)
 #     move = random_move(game, game.to_move)
     print('\n' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bitboard2str(move[0])) + ' to ' + str(bitboard2str(move[1])))
-    game = make_move(game, move[0], move[1])
+    game = make_move(game, move)
     
 #     sleep(0.05)
