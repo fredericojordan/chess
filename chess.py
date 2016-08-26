@@ -102,7 +102,7 @@ PIECE_CODES = { WHITE|KING:  'K',
 PIECE_CODES.update({v: k for k, v in PIECE_CODES.items()})
 
 
-# ========== GAME ==========
+# ========== CHESS GAME ==========
 
 class ChessGame:
     def __init__(self, FEN=''):
@@ -112,8 +112,18 @@ class ChessGame:
         self.castling_rights = FULL_CASTLING_RIGHTS
         self.halfmove_clock = 0
         self.fullmove_number = 1
+        
+        self.position_history = []
         if FEN != '':
             self.load_FEN(FEN)
+            self.position_history.append(FEN)
+        else:
+            self.position_history.append(INITIAL_FEN)
+            
+        self.move_history = []
+    
+    def get_move_list(self):
+        return ' '.join(self.move_history)
     
     def to_FEN(self):
         FEN_str = ''
@@ -205,8 +215,7 @@ class ChessGame:
         self.halfmove_clock = int(FEN_list[4])
         self.fullmove_number = int(FEN_list[5])
 
-# ==========================
-
+# ================================
 
 
 def get_piece(board, bitboard):
@@ -418,6 +427,10 @@ def make_move(game, move):
     # update positions and next to move
     new_game.board = move_piece(new_game.board, (leaving_position, arriving_position))
     new_game.to_move = opposing_color(new_game.to_move)
+    
+    # update history
+    new_game.move_history.append(bb2str(move[0]) + bb2str(move[1]))
+    new_game.position_history.append(new_game.to_FEN())
     return new_game
 
 def get_rank(rank_num):
@@ -1034,6 +1047,7 @@ def get_player_move(game):
 def get_AI_move(game):
     move = material_move(game, game.to_move)
 #     move = random_move(game, game.to_move)
+    print(PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])))
     return move
 
 def print_outcome(game):
@@ -1051,19 +1065,16 @@ def play_as_white():
     print('Playing as white!')
     while True:
         print_board(game.board)
-        
         if game_ended(game):
             break
         
         game = make_move(game, get_player_move(game))
-        print_board(game.board)
         
+        print_board(game.board)
         if game_ended(game):
             break
         
-        move = get_AI_move(game)
-        print('\n' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])))
-        game = make_move(game, move)
+        game = make_move(game, get_AI_move(game))
     print_outcome(game)
 
 
@@ -1072,16 +1083,12 @@ def play_as_black():
     print('Playing as black!')
     while True:
         print_rotated_board(game.board)
-        
         if game_ended(game):
             break
         
-        move = get_AI_move(game)
-        print('\n' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])))
-        game = make_move(game, move)
+        game = make_move(game, get_AI_move(game))
         
         print_rotated_board(game.board)
-        
         if game_ended(game):
             break
         
