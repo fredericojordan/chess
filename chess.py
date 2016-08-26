@@ -1045,8 +1045,13 @@ def get_player_move(game):
     return move
 
 def get_AI_move(game):
-    move = material_move(game, game.to_move)
 #     move = random_move(game, game.to_move)
+
+    if find_in_book(game):
+        move = get_book_move(game)
+    else:
+        move = material_move(game, game.to_move)
+    
     print(PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])))
     return move
 
@@ -1104,6 +1109,23 @@ def play_as(color):
 def play_random_color():
     color = choice([WHITE, BLACK])
     play_as(color)
+
+def find_in_book(game):    
+    openings = []
+    book_file = open("book.txt")
+    for line in book_file:
+        if line.startswith(game.get_move_list()):
+            openings.append(line.rstrip())
+    book_file.close()
+    return openings
+
+def get_book_move(game):
+    openings = find_in_book(game)
+    chosen_opening = choice(openings)
+    next_moves = chosen_opening.replace(game.get_move_list(), '').lstrip()
+    move_str = next_moves.split(' ')[0]
+    move = [str2bb(move_str[:2]), str2bb(move_str[-2:])]
+    return move
 
 # ========== TESTS ==========
 
