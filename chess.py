@@ -922,8 +922,8 @@ def count_legal_moves(game, color):
 def is_checkmate(game, color):
     return count_legal_moves(game, color) == 0 and is_check(game.board, color)
 
-def is_stalemate(game, color):
-    return count_legal_moves(game, color) == 0 and not is_check(game.board, color)
+def is_stalemate(game):
+    return count_legal_moves(game, game.to_move) == 0 and not is_check(game.board, game.to_move)
 
 def insufficient_material(game): # TODO: other insufficient positions 
     return material_sum(game.board, WHITE) + material_sum(game.board, BLACK) == 2*PIECE_VALUES[KING]/100 
@@ -931,8 +931,7 @@ def insufficient_material(game): # TODO: other insufficient positions
 def game_ended(game):
     return is_checkmate(game, WHITE) or \
            is_checkmate(game, BLACK) or \
-           is_stalemate(game, WHITE) or \
-           is_stalemate(game, BLACK) or \
+           is_stalemate(game) or \
            insufficient_material(game)
 
 def random_move(game, color):
@@ -1024,6 +1023,80 @@ def parse_move_code(game, move_code):
     else:
         return False
 
+def get_player_move(game):
+    move = None
+    while not move:
+        move = parse_move_code(game, input())
+        if not move:
+            print('Invalid move!')
+    return move
+
+def get_AI_move(game):
+    move = material_move(game, game.to_move)
+#     move = random_move(game, game.to_move)
+    return move
+
+def print_outcome(game):
+    if is_stalemate(game):
+        print('Draw by stalemate')
+    if is_checkmate(game, WHITE):
+        print('BLACK wins!')
+    if is_checkmate(game, BLACK):
+        print('WHITE wins!')
+    if insufficient_material(game):
+        print('Draw by insufficient material!')
+
+def play_as_white():
+    game = ChessGame()
+    print('Playing as white!')
+    while True:
+        print_board(game.board)
+        
+        if game_ended(game):
+            break
+        
+        game = make_move(game, get_player_move(game))
+        print_board(game.board)
+        
+        if game_ended(game):
+            break
+        
+        move = get_AI_move(game)
+        print('\n' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])))
+        game = make_move(game, move)
+    print_outcome(game)
+
+
+def play_as_black():
+    game = ChessGame()
+    print('Playing as black!')
+    while True:
+        print_rotated_board(game.board)
+        
+        if game_ended(game):
+            break
+        
+        move = get_AI_move(game)
+        print('\n' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])))
+        game = make_move(game, move)
+        
+        print_rotated_board(game.board)
+        
+        if game_ended(game):
+            break
+        
+        game = make_move(game, get_player_move(game))
+    print_outcome(game)
+        
+def play_as(color):
+    if color == WHITE:
+        play_as_white()
+    if color == BLACK:
+        play_as_black()
+
+def play_random_color():
+    color = choice([WHITE, BLACK])
+    play_as(color)
 
 # ========== TESTS ==========
 
@@ -1095,56 +1168,11 @@ def parse_move_code(game, move_code):
 # print_board(game.board)
 # test_game = ChessGame('k7/8/1Q6/8/8/8/8/1R4K1 b - - 0 15')
 # print('checkmate = ' + str(is_checkmate(test_game, test_game.to_move)))
-# print('stalemate = ' + str(is_stalemate(test_game, test_game.to_move)))
+# print('stalemate = ' + str(is_stalemate(test_game)))
 # print_board(test_game.board)
 # print(test_game.to_FEN())
 # game = ChessGame('rnbqkbnr/1pppppp1/3B4/2p2P2/1P1P4/Q6Q/1PP3P1/RNBQKBNR w KQkq - 0 1')
 
 # ========== /TESTS ==========
 
-
-
-game = ChessGame()
-
-while True:
-    print_board(game.board)
-      
-    if game_ended(game):
-        if is_stalemate(game, WHITE) or is_stalemate(game, BLACK):
-            print('Draw by stalemate')
-        if is_checkmate(game, WHITE):
-            print('BLACK wins!')
-        if is_checkmate(game, BLACK):
-            print('WHITE wins!')
-        if insufficient_material(game):
-            print('Draw by insufficient material!')
-        break
-        
-    # PLAYER MOVE
-    move = None
-    while not move:
-        move = parse_move_code(game, input())
-        if not move:
-            print('Invalid move!')
-    game = game = make_move(game, move)
-    
-    print_board(game.board)
-    
-    if game_ended(game):
-        if is_stalemate(game, WHITE) or is_stalemate(game, BLACK):
-            print('Draw by stalemate')
-        if is_checkmate(game, WHITE):
-            print('BLACK wins!')
-        if is_checkmate(game, BLACK):
-            print('WHITE wins!')
-        if insufficient_material(game):
-            print('Draw by insufficient material!')
-        break
-     
-    # AI MOVE
-    move = material_move(game, game.to_move)
-#     move = random_move(game, game.to_move)
-    print('\n' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])))
-    game = make_move(game, move)
-    
-#     sleep(0.05)
+play_random_color()
