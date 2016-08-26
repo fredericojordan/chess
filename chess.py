@@ -988,7 +988,7 @@ def parse_move_code(game, move_code):
         return False
     
     if len(move_code) == 4:
-        filter_squares = get_filter(move_code[2])
+        filter_squares = get_filter(move_code[1])
     else:
         filter_squares = ALL_SQUARES
 
@@ -1103,7 +1103,7 @@ def parse_move_code(game, move_code):
 
 
 game = ChessGame()
- 
+
 while True:
     print_board(game.board)
       
