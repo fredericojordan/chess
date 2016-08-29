@@ -21,7 +21,7 @@ move = [ leaving_position, arriving_position ]
 '''
 from copy import deepcopy
 from random import choice
-# from time import sleep
+from time import sleep
 import sys
 
 COLOR_MASK = 1 << 4
@@ -888,7 +888,7 @@ def material_sum(board, color):
     for piece in board:
         if piece&COLOR_MASK == color:
             material += PIECE_VALUES[piece&PIECE_MASK]
-    return material/100
+    return material
 
 def material_balance(board):
     return material_sum(board, WHITE) - material_sum(board, BLACK)
@@ -938,8 +938,18 @@ def is_checkmate(game, color):
 def is_stalemate(game):
     return count_legal_moves(game, game.to_move) == 0 and not is_check(game.board, game.to_move)
 
-def insufficient_material(game): # TODO: other insufficient positions 
-    return material_sum(game.board, WHITE) + material_sum(game.board, BLACK) == 2*PIECE_VALUES[KING]/100 
+def insufficient_material(game): # TODO: other insufficient positions
+    if material_sum(game.board, WHITE) + material_sum(game.board, BLACK) == 2*PIECE_VALUES[KING]:
+        return True
+    if material_sum(game.board, WHITE) == PIECE_VALUES[KING]:
+        if material_sum(game.board, BLACK) == PIECE_VALUES[KING] + PIECE_VALUES[KNIGHT] and \
+        (get_knights(game.board, BLACK) != 0 or get_bishops(game.board, BLACK) != 0):
+            return True
+    if material_sum(game.board, BLACK) == PIECE_VALUES[KING]:
+        if material_sum(game.board, WHITE) == PIECE_VALUES[KING] + PIECE_VALUES[KNIGHT] and \
+        (get_knights(game.board, WHITE) != 0 or get_bishops(game.board, WHITE) != 0):
+            return True
+    return False
 
 def game_ended(game):
     return is_checkmate(game, WHITE) or \
@@ -970,7 +980,7 @@ def material_move(game, color):
             if material > best_material:
                 best_material = material
                 best_moves = [move]
-            if material == best_material:
+            elif material == best_material:
                 best_moves.append(move)
         return choice(best_moves)
         
@@ -982,7 +992,7 @@ def material_move(game, color):
             if material < best_material:
                 best_material = material
                 best_moves = [move]
-            if material == best_material:
+            elif material == best_material:
                 best_moves.append(move)
         return choice(best_moves)
 
@@ -1099,6 +1109,19 @@ def play_as_black():
         
         game = make_move(game, get_player_move(game))
     print_outcome(game)
+
+def watch_AI_game(sleep_seconds=0):
+    game = ChessGame()
+    print('Watching AI-vs-AI game!')
+    while True:
+        print_board(game.board)
+        if game_ended(game):
+            break
+                
+        game = make_move(game, get_AI_move(game))
+        sleep(sleep_seconds)
+    print_outcome(game)
+    
         
 def play_as(color):
     if color == WHITE:
@@ -1114,7 +1137,7 @@ def find_in_book(game):
     openings = []
     book_file = open("book.txt")
     for line in book_file:
-        if line.startswith(game.get_move_list()):
+        if line.startswith(game.get_move_list()) and line.rstrip() > game.get_move_list():
             openings.append(line.rstrip())
     book_file.close()
     return openings
@@ -1204,4 +1227,5 @@ def get_book_move(game):
 
 # ========== /TESTS ==========
 
+# watch_AI_game()
 play_random_color()
