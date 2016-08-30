@@ -21,8 +21,7 @@ move = [ leaving_position, arriving_position ]
 '''
 from copy import deepcopy
 from random import choice
-from time import sleep
-import sys
+from time import sleep, time
 
 COLOR_MASK = 1 << 4
 WHITE = 0 << 4
@@ -242,7 +241,7 @@ def str2bb(position_str):
     return 0b1 << str2index(position_str)
 
 def move2str(move):
-    return '{}{}'.format(bb2str(move[0]), bb2str(move[1]))
+    return bb2str(move[0]) + bb2str(move[1])
 
 def single_gen(bitboard):
     for i in range(64):
@@ -432,7 +431,7 @@ def make_move(game, move):
     new_game.to_move = opposing_color(new_game.to_move)
     
     # update history
-    new_game.move_history.append(bb2str(move[0]) + bb2str(move[1]))
+    new_game.move_history.append(move2str(move))
     new_game.position_history.append(new_game.to_FEN())
     return new_game
 
@@ -895,6 +894,17 @@ def material_sum(board, color):
 
 def material_balance(board):
     return material_sum(board, WHITE) - material_sum(board, BLACK)
+
+def evaluate_game(game):
+    if is_checkmate(game, game.to_move):
+        return checkmate_value(game.to_move)
+    return material_balance(game.board)
+
+def checkmate_value(color):
+    if color == WHITE:
+        return -PIECE_VALUES[KING]
+    if color == BLACK:
+        return PIECE_VALUES[KING]
     
 def pseudo_legal_moves_gen(game, color):
     for pawn in colored_piece_gen(game.board, PAWN, color):
@@ -936,7 +946,7 @@ def count_legal_moves(game, color):
     return count
 
 def is_checkmate(game, color):
-    return count_legal_moves(game, color) == 0 and is_check(game.board, color)
+    return is_check(game.board, color) and count_legal_moves(game, color) == 0 
 
 def is_stalemate(game):
     return count_legal_moves(game, game.to_move) == 0 and not is_check(game.board, game.to_move)
@@ -961,89 +971,61 @@ def game_ended(game):
            insufficient_material(game)
 
 def random_move(game, color):
-    if count_legal_moves(game, color) == 0:
-        print('Game over! ' + 'BLACK' if game.to_move == WHITE else 'WHITE' + ' wins!' )
-        sys.exit(0)
-        
     legal_moves = []
     for move in legal_moves_gen(game, color):
         legal_moves.append(move)
     return choice(legal_moves)
-        
-def material_move(game, color):
-    
-    if count_legal_moves(game, color) == 0:
-        print('Game over! ' + 'BLACK' if game.to_move == WHITE else 'WHITE' + ' wins!' )
-        sys.exit(0)
-    
-    if color == WHITE:
-        best_material = -PIECE_VALUES[KING]
-        best_moves = []
-        for move in legal_moves_gen(game, color):
-            material = material_balance(make_move(game, move).board)
-            if material > best_material:
-                best_material = material
-                best_moves = [move]
-            elif material == best_material:
-                best_moves.append(move)
-        return choice(best_moves)
-        
-    if color == BLACK:
-        best_material = PIECE_VALUES[KING]
-        best_moves = []
-        for move in legal_moves_gen(game, color):
-            material = material_balance(make_move(game, move).board)
-            if material < best_material:
-                best_material = material
-                best_moves = [move]
-            elif material == best_material:
-                best_moves.append(move)
-        return choice(best_moves)
 
-def iterated_material_move(game, color, depth=1):
-    print('depth={}'.format(depth))
+def evaluated_move(game, color):
+    best_score = checkmate_value(color)
+    best_moves = []
     
-    if color == WHITE:
-        best_material = -PIECE_VALUES[KING]
-        best_moves = []
+    for move in legal_moves_gen(game, color):
+        evaluation = evaluate_game(make_move(game, move))
         
-        for move in legal_moves_gen(game, color):
-            his_game = make_move(game, move)
-            
-            if depth == 1:
-                best_reply = material_move(his_game, opposing_color(color))
-            else:
-                best_reply = iterated_material_move(his_game, opposing_color(color), depth-1)
-            
-            material = material_balance(make_move(his_game, best_reply).board)
-            
-            if material > best_material:
-                best_material = material
-                best_moves = [move]
-            elif material == best_material:
-                best_moves.append(move)
+        if is_checkmate(make_move(game, move), opposing_color(game.to_move)):
+            return move
         
-    if color == BLACK:
-        best_material = PIECE_VALUES[KING]
-        best_moves = []
+        if (color == WHITE and evaluation > best_score) or \
+           (color == BLACK and evaluation < best_score):
+            best_score = evaluation
+            best_moves = [move]
+        elif evaluation == best_score:
+            best_moves.append(move)
+                
+    return [choice(best_moves), best_score]
+
+def iterated_evaluated_move(game, color, depth=1):
+#     print('    depth={}'.format(depth))
+    
+    best_score = checkmate_value(color)
+    best_moves = []
+    
+    [simple_move, simple_evaluation] = evaluated_move(game, color)
+    
+    if depth == 1 or \
+       simple_evaluation == checkmate_value(opposing_color(color)):
+        return [simple_move, simple_evaluation]
+    
+    for move in legal_moves_gen(game, color):
+        his_game = make_move(game, move)
         
-        for move in legal_moves_gen(game, color):
-            his_game = make_move(game, move)
+        if is_checkmate(his_game, his_game.to_move):
+            return [move, checkmate_value(his_game.to_move)]
             
-            if depth == 1:
-                best_reply = material_move(his_game, opposing_color(color))
-            else:
-                best_reply = iterated_material_move(his_game, opposing_color(color), depth-1)
-            
-            material = material_balance(make_move(his_game, best_reply).board)
-            
-            if material < best_material:
-                best_material = material
-                best_moves = [move]
-            elif material == best_material:
-                best_moves.append(move)
-    return choice(best_moves)
+        [_, evaluation] = iterated_evaluated_move(his_game, opposing_color(color), depth-1)
         
+        if evaluation == checkmate_value(opposing_color(color)):
+            return [move, evaluation]
+        
+        if (color == WHITE and evaluation > best_score) or \
+           (color == BLACK and evaluation < best_score):
+            best_score = evaluation
+            best_moves = [move]
+        elif evaluation == best_score:
+            best_moves.append(move)
+        
+    return [choice(best_moves), best_score]
 
 def parse_move_code(game, move_code):
     move_code = move_code.replace(" ","")
@@ -1103,15 +1085,17 @@ def get_player_move(game):
             print('Invalid move!')
     return move
 
-def get_AI_move(game):
+def get_AI_move(game, depth=2):
+    print('Searching best move for white...' if game.to_move == WHITE else 'Searching best move for black...')
+    start_time = time()
 
     if find_in_book(game):
         move = get_book_move(game)
     else:
-#         move = random_move(game, game.to_move)
-        move = iterated_material_move(game, game.to_move, depth=1)
-    
-    print(PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])))
+        move = iterated_evaluated_move(game, game.to_move, depth)[0]
+
+    end_time = time()    
+    print('Found move ' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])) + ' in {:.3f} seconds'.format(end_time-start_time))
     return move
 
 def print_outcome(game):
@@ -1124,8 +1108,7 @@ def print_outcome(game):
     if insufficient_material(game):
         print('Draw by insufficient material!')
 
-def play_as_white():
-    game = ChessGame()
+def play_as_white(game=ChessGame()):
     print('Playing as white!')
     while True:
         print_board(game.board)
@@ -1142,8 +1125,7 @@ def play_as_white():
     print_outcome(game)
 
 
-def play_as_black():
-    game = ChessGame()
+def play_as_black(game=ChessGame()):
     print('Playing as black!')
     while True:
         print_rotated_board(game.board)
@@ -1159,8 +1141,7 @@ def play_as_black():
         game = make_move(game, get_player_move(game))
     print_outcome(game)
 
-def watch_AI_game(sleep_seconds=0):
-    game = ChessGame()
+def watch_AI_game(game=ChessGame(), sleep_seconds=0):
     print('Watching AI-vs-AI game!')
     while True:
         print_board(game.board)
@@ -1198,6 +1179,8 @@ def get_book_move(game):
     move_str = next_moves.split(' ')[0]
     move = [str2bb(move_str[:2]), str2bb(move_str[-2:])]
     return move
+
+
 
 # ========== TESTS ==========
 
@@ -1273,6 +1256,8 @@ def get_book_move(game):
 # print_board(test_game.board)
 # print(test_game.to_FEN())
 # game = ChessGame('rnbqkbnr/1pppppp1/3B4/2p2P2/1P1P4/Q6Q/1PP3P1/RNBQKBNR w KQkq - 0 1')
+# game = ChessGame('rnbqk1nr/pppp3p/3b4/6p1/2BPPp2/8/PPP3PP/RNBQK2R w KQkq - 0 1')
+# watch_AI_game(game)
 
 # ========== /TESTS ==========
 
