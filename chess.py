@@ -1000,7 +1000,8 @@ def material_move(game, color):
                 best_moves.append(move)
         return choice(best_moves)
 
-def iterated_material_move(game, color):
+def iterated_material_move(game, color, depth=1):
+    print('depth={}'.format(depth))
     
     if color == WHITE:
         best_material = -PIECE_VALUES[KING]
@@ -1008,7 +1009,11 @@ def iterated_material_move(game, color):
         
         for move in legal_moves_gen(game, color):
             his_game = make_move(game, move)
-            best_reply = material_move(his_game, opposing_color(color))
+            
+            if depth == 1:
+                best_reply = material_move(his_game, opposing_color(color))
+            else:
+                best_reply = iterated_material_move(his_game, opposing_color(color), depth-1)
             
             material = material_balance(make_move(his_game, best_reply).board)
             
@@ -1024,7 +1029,11 @@ def iterated_material_move(game, color):
         
         for move in legal_moves_gen(game, color):
             his_game = make_move(game, move)
-            best_reply = material_move(his_game, opposing_color(color))
+            
+            if depth == 1:
+                best_reply = material_move(his_game, opposing_color(color))
+            else:
+                best_reply = iterated_material_move(his_game, opposing_color(color), depth-1)
             
             material = material_balance(make_move(his_game, best_reply).board)
             
@@ -1089,19 +1098,18 @@ def parse_move_code(game, move_code):
 def get_player_move(game):
     move = None
     while not move:
-        move = parse_move_code(game, raw_input())
+        move = parse_move_code(game, input())
         if not move:
             print('Invalid move!')
     return move
 
 def get_AI_move(game):
-#     move = random_move(game, game.to_move)
 
     if find_in_book(game):
         move = get_book_move(game)
     else:
-#         move = material_move(game, game.to_move)
-        move = iterated_material_move(game, game.to_move)
+#         move = random_move(game, game.to_move)
+        move = iterated_material_move(game, game.to_move, depth=1)
     
     print(PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])))
     return move
