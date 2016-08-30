@@ -241,6 +241,9 @@ def bb2str(bitboard):
 def str2bb(position_str):
     return 0b1 << str2index(position_str)
 
+def move2str(move):
+    return '{}{}'.format(bb2str(move[0]), bb2str(move[1]))
+
 def single_gen(bitboard):
     for i in range(64):
         bit = 0b1 << i
@@ -968,6 +971,7 @@ def random_move(game, color):
     return choice(legal_moves)
         
 def material_move(game, color):
+    
     if count_legal_moves(game, color) == 0:
         print('Game over! ' + 'BLACK' if game.to_move == WHITE else 'WHITE' + ' wins!' )
         sys.exit(0)
@@ -995,6 +999,42 @@ def material_move(game, color):
             elif material == best_material:
                 best_moves.append(move)
         return choice(best_moves)
+
+def iterated_material_move(game, color):
+    
+    if color == WHITE:
+        best_material = -PIECE_VALUES[KING]
+        best_moves = []
+        
+        for move in legal_moves_gen(game, color):
+            his_game = make_move(game, move)
+            best_reply = material_move(his_game, opposing_color(color))
+            
+            material = material_balance(make_move(his_game, best_reply).board)
+            
+            if material > best_material:
+                best_material = material
+                best_moves = [move]
+            elif material == best_material:
+                best_moves.append(move)
+        
+    if color == BLACK:
+        best_material = PIECE_VALUES[KING]
+        best_moves = []
+        
+        for move in legal_moves_gen(game, color):
+            his_game = make_move(game, move)
+            best_reply = material_move(his_game, opposing_color(color))
+            
+            material = material_balance(make_move(his_game, best_reply).board)
+            
+            if material < best_material:
+                best_material = material
+                best_moves = [move]
+            elif material == best_material:
+                best_moves.append(move)
+    return choice(best_moves)
+        
 
 def parse_move_code(game, move_code):
     move_code = move_code.replace(" ","")
@@ -1049,7 +1089,7 @@ def parse_move_code(game, move_code):
 def get_player_move(game):
     move = None
     while not move:
-        move = parse_move_code(game, input())
+        move = parse_move_code(game, raw_input())
         if not move:
             print('Invalid move!')
     return move
@@ -1060,7 +1100,8 @@ def get_AI_move(game):
     if find_in_book(game):
         move = get_book_move(game)
     else:
-        move = material_move(game, game.to_move)
+#         move = material_move(game, game.to_move)
+        move = iterated_material_move(game, game.to_move)
     
     print(PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])))
     return move
