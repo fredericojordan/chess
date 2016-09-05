@@ -103,6 +103,8 @@ PIECE_CODES = { WHITE|KING:  'K',
                 EMPTY:       '.' }
 PIECE_CODES.update({v: k for k, v in PIECE_CODES.items()})
 
+verbose = False
+
 
 # ========== CHESS GAME ==========
 
@@ -1089,7 +1091,8 @@ def get_player_move(game):
     return move
 
 def get_AI_move(game, depth=2):
-    print('Searching best move for white...' if game.to_move == WHITE else 'Searching best move for black...')
+    if verbose:
+        print('Searching best move for white...' if game.to_move == WHITE else 'Searching best move for black...')
     start_time = time()
 
     if find_in_book(game):
@@ -1097,8 +1100,9 @@ def get_AI_move(game, depth=2):
     else:
         move = iterated_evaluated_move(game, game.to_move, depth)[0]
 
-    end_time = time()    
-    print('Found move ' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])) + ' in {:.3f} seconds'.format(end_time-start_time))
+    end_time = time()
+    if verbose:
+        print('Found move ' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])) + ' in {:.3f} seconds'.format(end_time-start_time))
     return move
 
 def print_outcome(game):
