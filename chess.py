@@ -3,17 +3,20 @@ Created on 12 de ago de 2016
 
 @author: fvj
 
-BITMASK = 0bC**KMPPP
-
+PIECE AND COLOR BITMASK = 0bCPPP
 where:
 C - color
-* - not used
-K - castling flag
 P - piece code
+
+CASTLING RIGHTS BITMASK = 0bqkQK
+where:
+q - CASTLE_QUEENSIDE_BLACK
+k - CASTLE_KINGSIDE_BLACK
+Q - CASTLE_QUEENSIDE_WHITE
+K - CASTLE_KINGSIDE_WHITE
 
 This program uses "Little-Endian Rank-File Mapping":
 bit_boards = 0b(h8)(g8)...(b1)(a1)
-
 board = [ a1, b1, ..., g8, h8 ]
 
 move = [ leaving_position, arriving_position ]
@@ -1163,7 +1166,10 @@ def play_random_color():
     color = choice([WHITE, BLACK])
     play_as(color)
 
-def find_in_book(game):    
+def find_in_book(game):
+    if game.position_history[0] != INITIAL_FEN:
+        return False
+    
     openings = []
     book_file = open("book.txt")
     for line in book_file:
