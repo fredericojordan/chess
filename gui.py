@@ -48,12 +48,20 @@ def get_square_rect(square):
     row = 7-chess.RANKS.index(square[1])
     return pygame.Rect((col*SQUARE_SIDE, row*SQUARE_SIDE), (SQUARE_SIDE,SQUARE_SIDE))
 
-def coord2str(position):
-    file_index = int(position[0]/50)
-    rank_index = 7 - int(position[1]/50)
-    return chess.FILES[file_index] + chess.RANKS[rank_index]
+def coord2str(position, color=chess.WHITE):
+    if color == chess.WHITE:
+        file_index = int(position[0]/50)
+        rank_index = 7 - int(position[1]/50)
+        return chess.FILES[file_index] + chess.RANKS[rank_index]
+    if color == chess.BLACK:
+        file_index = 7 - int(position[0]/50)
+        rank_index = int(position[1]/50)
+        return chess.FILES[file_index] + chess.RANKS[rank_index]
     
-def print_board(board):
+def print_board(board, color=chess.WHITE):
+    if color == chess.BLACK:
+        board = chess.rotate_board(board)
+    
     print_empty_board()
     
     for position in chess.colored_piece_gen(board, chess.KING, chess.BLACK):
@@ -85,42 +93,48 @@ def print_board(board):
     pygame.display.flip()
 
 def play_as(game, color):
+    ongoing = True
+    
     while True:
         CLOCK.tick(15)
-        print_board(game.board)
+        print_board(game.board, color)
         
         if chess.game_ended(game):
-            chess.print_outcome(game)
-            while True:
-                pass
+            pygame.display.set_caption('Chess Game - ' + chess.get_outcome(game))
+            pygame.display.flip()
+            ongoing = False
         
-        if game.to_move == chess.opposing_color(color):
+        if ongoing and game.to_move == chess.opposing_color(color):
+            pygame.display.set_caption('Chess Game - Calculating move...')
+            pygame.display.flip()
             game = chess.make_move(game, chess.get_AI_move(game, 2))
-            print_board(game.board)
+            pygame.display.set_caption('Chess Game')
+            print_board(game.board, color)
         
         if chess.game_ended(game):
-            chess.print_outcome(game)
-            while True:
-                pass
+            pygame.display.set_caption('Chess Game - ' + chess.get_outcome(game))
+            pygame.display.flip()
+            ongoing = False
          
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
             
             if event.type == pygame.MOUSEBUTTONDOWN:
-                leaving_square = coord2str(pygame.mouse.get_pos())
+                leaving_square = coord2str(pygame.mouse.get_pos(), color)
                 
             if event.type == pygame.MOUSEBUTTONUP:
-                arriving_square = coord2str(pygame.mouse.get_pos())
+                arriving_square = coord2str(pygame.mouse.get_pos(), color)
                 
-                for move in chess.legal_moves_gen(game, color):
-                    if move == [chess.str2bb(leaving_square), chess.str2bb(arriving_square)]:
-                        game = chess.make_move(game, move)
+                if ongoing:
+                    for move in chess.legal_moves_gen(game, color):
+                        if move == [chess.str2bb(leaving_square), chess.str2bb(arriving_square)]:
+                            game = chess.make_move(game, move)
             
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     sys.exit()
-                if event.key == 104: # H key
+                if event.key == 104 and ongoing: # H key
                     game = chess.make_move(game, chess.get_AI_move(game, 2))
 
 def play_as_white(game=chess.Game()):

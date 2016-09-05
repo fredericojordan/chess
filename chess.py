@@ -1106,14 +1106,17 @@ def get_AI_move(game, depth=2):
     return move
 
 def print_outcome(game):
+    print(get_outcome(game))
+    
+def get_outcome(game):
     if is_stalemate(game):
-        print('Draw by stalemate')
+        return 'Draw by stalemate'
     if is_checkmate(game, WHITE):
-        print('BLACK wins!')
+        return 'BLACK wins!'
     if is_checkmate(game, BLACK):
-        print('WHITE wins!')
+        return 'WHITE wins!'
     if insufficient_material(game):
-        print('Draw by insufficient material!')
+        return 'Draw by insufficient material!'
 
 def play_as_white(game=Game()):
     print('Playing as white!')
