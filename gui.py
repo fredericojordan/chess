@@ -136,6 +136,9 @@ def play_as(game, color):
                     sys.exit()
                 if event.key == 104 and ongoing: # H key
                     game = chess.make_move(game, chess.get_AI_move(game, 2))
+                if event.key == 117 and ongoing: # U key
+                    game = chess.unmake_move(game)
+                    game = chess.unmake_move(game)
 
 def play_as_white(game=chess.Game()):
     return play_as(game, chess.WHITE)

@@ -440,6 +440,15 @@ def make_move(game, move):
     new_game.position_history.append(new_game.to_FEN())
     return new_game
 
+def unmake_move(game):
+    if len(game.position_history) < 2:
+        return deepcopy(game)
+    
+    new_game = Game(game.position_history[-2])
+    new_game.move_history = deepcopy(game.move_history)[:-1]
+    new_game.position_history = deepcopy(game.position_history)[:-1]
+    return new_game
+
 def get_rank(rank_num):
     rank_num = int(rank_num)
     if rank_num == 1:
