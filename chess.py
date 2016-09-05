@@ -103,7 +103,7 @@ PIECE_CODES.update({v: k for k, v in PIECE_CODES.items()})
 
 # ========== CHESS GAME ==========
 
-class ChessGame:
+class Game:
     def __init__(self, FEN=''):
         self.board = INITIAL_BOARD
         self.to_move = WHITE
@@ -1108,7 +1108,7 @@ def print_outcome(game):
     if insufficient_material(game):
         print('Draw by insufficient material!')
 
-def play_as_white(game=ChessGame()):
+def play_as_white(game=Game()):
     print('Playing as white!')
     while True:
         print_board(game.board)
@@ -1125,7 +1125,7 @@ def play_as_white(game=ChessGame()):
     print_outcome(game)
 
 
-def play_as_black(game=ChessGame()):
+def play_as_black(game=Game()):
     print('Playing as black!')
     while True:
         print_rotated_board(game.board)
@@ -1141,7 +1141,7 @@ def play_as_black(game=ChessGame()):
         game = make_move(game, get_player_move(game))
     print_outcome(game)
 
-def watch_AI_game(game=ChessGame(), sleep_seconds=0):
+def watch_AI_game(game=Game(), sleep_seconds=0):
     print('Watching AI-vs-AI game!')
     while True:
         print_board(game.board)
@@ -1187,14 +1187,14 @@ def get_book_move(game):
 # for move in legal_moves_gen(test_game, test_game.to_move):
 #     new_pos = make_move(test_game, move).board
 #     print_board(new_pos)
-# test_game = ChessGame('r3kbnr/ppp3pp/3pqp2/8/1n5P/1b2K1P1/PPPPPP2/RNBQ1BNR w kq - 0 1')
+# test_game = Game('r3kbnr/ppp3pp/3pqp2/8/1n5P/1b2K1P1/PPPPPP2/RNBQ1BNR w kq - 0 1')
 # print_board(test_game.board)
 # print_bitboard(empty_squares(test_game.board))
 # print_bitboard(occupied_squares(test_game.board))
 # print_bitboard(pawn_attacks(get_pawns(test_game.board, WHITE), test_game.board, WHITE))
 # print_bitboard(pawn_double_attacks(get_pawns(test_game.board, WHITE), test_game.board, WHITE))
 # print_bitboard(pawn_captures(get_pawns(test_game.board, WHITE), test_game, WHITE))
-# print_bitboard(king_moves(get_king(test_game.board, BLACK), test_game.board, BLACK) | pawn_moves(get_pawns(test_game.board, WHITE), ChessGame(), WHITE))
+# print_bitboard(king_moves(get_king(test_game.board, BLACK), test_game.board, BLACK) | pawn_moves(get_pawns(test_game.board, WHITE), Game(), WHITE))
 # print_bitboard(knight_moves(get_knights(test_game.board, BLACK), test_game.board, BLACK))
 # print_bitboard(get_rooks(test_game.board, WHITE) | get_bishops(test_game.board, WHITE))
 # print_bitboard(rook_rays(get_queen(test_game.board, BLACK)))
@@ -1222,7 +1222,7 @@ def get_book_move(game):
 # print(count_attacks(str2bb('B3'), test_game.board, WHITE))
 # print(count_attacks(str2bb('B3'), test_game.board, BLACK))
 # print(bin(FULL_CASTLING_RIGHTS))
-# game = ChessGame('r3kbnr/ppp3pp/3pqp2/8/1n5P/1b2K1P1/PPPPPP2/RNBQ1BNR b KQkq - 0 1')
+# game = Game('r3kbnr/ppp3pp/3pqp2/8/1n5P/1b2K1P1/PPPPPP2/RNBQ1BNR b KQkq - 0 1')
 # print(can_castle_kingside(game, WHITE))
 # print(can_castle_queenside(game, WHITE))
 # print(can_castle_kingside(game, BLACK))
@@ -1235,7 +1235,7 @@ def get_book_move(game):
 # print_board(move_piece(test_game.board, (str2bb('g1'), str2bb('f3'))))
 # print_board(move_piece(test_game.board, (str2bb('e2'), str2bb('f3'))))
 # print(game.to_FEN())
-# game = ChessGame('1r1q2k1/B4p1p/4r1p1/3n2P1/b4P2/7P/8/3R2K1 w - - 1 28')
+# game = Game('1r1q2k1/B4p1p/4r1p1/3n2P1/b4P2/7P/8/3R2K1 w - - 1 28')
 # print_board(game.board)
 # print_rotated_board(game.board)
 # print(game.to_FEN())
@@ -1243,23 +1243,23 @@ def get_book_move(game):
 # print(material_sum(game.board, BLACK))
 # print(material_balance(game.board))
 # print(piece2str(get_piece(game.board, str2bb('a7'))))
-# game = ChessGame('1r1q2k1/B4p2/4r1p1/3n2Pp/b4P2/7P/8/3R2K1 w KQ h6 1 28')
+# game = Game('1r1q2k1/B4p2/4r1p1/3n2Pp/b4P2/7P/8/3R2K1 w KQ h6 1 28')
 # print_board(game.board)
 # print(game.to_FEN())
-# game = ChessGame('1r1q2k1/B4p2/4r1p1/3n2Pp/b4P2/7P/8/3R2K1 b - h6 1 28')
+# game = Game('1r1q2k1/B4p2/4r1p1/3n2Pp/b4P2/7P/8/3R2K1 b - h6 1 28')
 # print_board(game.board)
-# game = ChessGame('rnbqkbnr/1pppppp1/8/2p2P2/1P6/Q6Q/1PP2BP1/RNBQKBNR w KQkq - 0 1')
+# game = Game('rnbqkbnr/1pppppp1/8/2p2P2/1P6/Q6Q/1PP2BP1/RNBQKBNR w KQkq - 0 1')
 # print_board(game.board)
-# test_game = ChessGame('k7/8/1Q6/8/8/8/8/1R4K1 b - - 0 15')
+# test_game = Game('k7/8/1Q6/8/8/8/8/1R4K1 b - - 0 15')
 # print('checkmate = ' + str(is_checkmate(test_game, test_game.to_move)))
 # print('stalemate = ' + str(is_stalemate(test_game)))
 # print_board(test_game.board)
 # print(test_game.to_FEN())
-# game = ChessGame('rnbqkbnr/1pppppp1/3B4/2p2P2/1P1P4/Q6Q/1PP3P1/RNBQKBNR w KQkq - 0 1')
-# game = ChessGame('rnbqk1nr/pppp3p/3b4/6p1/2BPPp2/8/PPP3PP/RNBQK2R w KQkq - 0 1')
+# game = Game('rnbqkbnr/1pppppp1/3B4/2p2P2/1P1P4/Q6Q/1PP3P1/RNBQKBNR w KQkq - 0 1')
+# game = Game('rnbqk1nr/pppp3p/3b4/6p1/2BPPp2/8/PPP3PP/RNBQK2R w KQkq - 0 1')
 # watch_AI_game(game)
 
 # ========== /TESTS ==========
 
 # watch_AI_game()
-play_random_color()
+# play_random_color()

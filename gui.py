@@ -3,92 +3,128 @@ Created on 2 de set de 2016
 
 @author: fvj
 '''
-import sys, pygame
+import sys, pygame, chess
 pygame.init()
 
-size = width, height = 400, 400
+SIZE = width, height = 400, 400
+SQUARE_SIZE = (50,50)
+LIGHT_GRAY = 240,240,240
+WHITE = 255,255,255
 
-clock = pygame.time.Clock()
-screen = pygame.display.set_mode(size)
+DARK_SQUARE = pygame.image.load("images/gray_square.png")
 
-square_size = (50,50)
+b_king   = pygame.transform.scale(pygame.image.load("images/black_king.png"), SQUARE_SIZE)
+b_queen  = pygame.transform.scale(pygame.image.load("images/black_queen.png"), SQUARE_SIZE)
+b_rook   = pygame.transform.scale(pygame.image.load("images/black_rook.png"), SQUARE_SIZE)
+b_bishop = pygame.transform.scale(pygame.image.load("images/black_bishop.png"), SQUARE_SIZE)
+b_knight = pygame.transform.scale(pygame.image.load("images/black_knight.png"), SQUARE_SIZE)
+b_pawn   = pygame.transform.scale(pygame.image.load("images/black_pawn.png"), SQUARE_SIZE)
 
-dark_square = pygame.image.load("images/gray_square.png")
+w_king   = pygame.transform.scale(pygame.image.load("images/white_king.png"), SQUARE_SIZE)
+w_queen  = pygame.transform.scale(pygame.image.load("images/white_queen.png"), SQUARE_SIZE)
+w_rook   = pygame.transform.scale(pygame.image.load("images/white_rook.png"), SQUARE_SIZE)
+w_bishop = pygame.transform.scale(pygame.image.load("images/white_bishop.png"), SQUARE_SIZE)
+w_knight = pygame.transform.scale(pygame.image.load("images/white_knight.png"), SQUARE_SIZE)
+w_pawn   = pygame.transform.scale(pygame.image.load("images/white_pawn.png"), SQUARE_SIZE)
 
-b_king   = pygame.transform.scale(pygame.image.load("images/black_king.png"), square_size)
-b_queen  = pygame.transform.scale(pygame.image.load("images/black_queen.png"), square_size)
-b_rook   = pygame.transform.scale(pygame.image.load("images/black_rook.png"), square_size)
-b_bishop = pygame.transform.scale(pygame.image.load("images/black_bishop.png"), square_size)
-b_knight = pygame.transform.scale(pygame.image.load("images/black_knight.png"), square_size)
-b_pawn   = pygame.transform.scale(pygame.image.load("images/black_pawn.png"), square_size)
+SQUARE_A8 = DARK_SQUARE.get_rect()
 
-w_king   = pygame.transform.scale(pygame.image.load("images/white_king.png"), square_size)
-w_queen  = pygame.transform.scale(pygame.image.load("images/white_queen.png"), square_size)
-w_rook   = pygame.transform.scale(pygame.image.load("images/white_rook.png"), square_size)
-w_bishop = pygame.transform.scale(pygame.image.load("images/white_bishop.png"), square_size)
-w_knight = pygame.transform.scale(pygame.image.load("images/white_knight.png"), square_size)
-w_pawn   = pygame.transform.scale(pygame.image.load("images/white_pawn.png"), square_size)
+CLOCK = pygame.time.Clock()
+SCREEN = pygame.display.set_mode(SIZE)
 
-white = 255,255,255
-screen.fill(white)
+def print_empty_board():
+#     SCREEN.fill(WHITE)
+    SCREEN.fill(LIGHT_GRAY)
+    print_dark_squares()
 
-init_square = dark_square.get_rect()
+def print_dark_squares():
+    for col in range(8):
+        square_rect = SQUARE_A8.move(col*50, (col+1)%2*50)
+        for _ in range(4):
+            SCREEN.blit(DARK_SQUARE, square_rect)
+            square_rect = square_rect.move([0,100])
+            
+def get_square(square):
+    FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+    RANKS = ['1', '2', '3', '4', '5', '6', '7', '8']
+    col = FILES.index(square[0])
+    row = 7-RANKS.index(square[1])
+    return SQUARE_A8.move(col*50, row*50)
 
-for col in range(8):
-    square_rect = init_square.move(col*50, (col+1)%2*50)
-    for row in range(4):
-        screen.blit(dark_square, square_rect)
-        square_rect = square_rect.move([0,100])
-        
-square_rect = init_square
-screen.blit(b_rook, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(b_knight, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(b_bishop, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(b_queen, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(b_king, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(b_bishop, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(b_knight, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(b_rook, square_rect)
-
-square_rect = init_square
-square_rect = square_rect.move(0,50)
-for _ in range(8):
-    screen.blit(b_pawn, square_rect)
-    square_rect = square_rect.move(50,0)
+def print_initial_board():
+    print_empty_board()
     
-square_rect = init_square
-square_rect = square_rect.move(0,350)
-screen.blit(w_rook, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(w_knight, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(w_bishop, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(w_queen, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(w_king, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(w_bishop, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(w_knight, square_rect)
-square_rect = square_rect.move(50,0)
-screen.blit(w_rook, square_rect)
-
-square_rect = init_square
-square_rect = square_rect.move(0,300)
-for _ in range(8):
-    screen.blit(w_pawn, square_rect)
-    square_rect = square_rect.move(50,0)
+    SCREEN.blit(b_rook,   get_square('a8'))
+    SCREEN.blit(b_knight, get_square('b8'))
+    SCREEN.blit(b_bishop, get_square('c8'))
+    SCREEN.blit(b_queen,  get_square('d8'))
+    SCREEN.blit(b_king,   get_square('e8'))
+    SCREEN.blit(b_bishop, get_square('f8'))
+    SCREEN.blit(b_knight, get_square('g8'))
+    SCREEN.blit(b_rook,   get_square('h8'))
+    
+    SCREEN.blit(b_pawn, get_square('a7'))
+    SCREEN.blit(b_pawn, get_square('b7'))
+    SCREEN.blit(b_pawn, get_square('c7'))
+    SCREEN.blit(b_pawn, get_square('d7'))
+    SCREEN.blit(b_pawn, get_square('e7'))
+    SCREEN.blit(b_pawn, get_square('f7'))
+    SCREEN.blit(b_pawn, get_square('g7'))
+    SCREEN.blit(b_pawn, get_square('h7'))
+    
+    SCREEN.blit(w_rook,   get_square('a1'))
+    SCREEN.blit(w_knight, get_square('b1'))
+    SCREEN.blit(w_bishop, get_square('c1'))
+    SCREEN.blit(w_queen,  get_square('d1'))
+    SCREEN.blit(w_king,   get_square('e1'))
+    SCREEN.blit(w_bishop, get_square('f1'))
+    SCREEN.blit(w_knight, get_square('g1'))
+    SCREEN.blit(w_rook,   get_square('h1'))
+     
+    SCREEN.blit(w_pawn, get_square('a2'))
+    SCREEN.blit(w_pawn, get_square('b2'))
+    SCREEN.blit(w_pawn, get_square('c2'))
+    SCREEN.blit(w_pawn, get_square('d2'))
+    SCREEN.blit(w_pawn, get_square('e2'))
+    SCREEN.blit(w_pawn, get_square('f2'))
+    SCREEN.blit(w_pawn, get_square('g2'))
+    SCREEN.blit(w_pawn, get_square('h2'))
+    
+def print_board(board):
+    print_empty_board()
+    
+    for position in chess.colored_piece_gen(board, chess.KING, chess.BLACK):
+        SCREEN.blit(b_king, get_square(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(board, chess.QUEEN, chess.BLACK):
+        SCREEN.blit(b_queen, get_square(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(board, chess.ROOK, chess.BLACK):
+        SCREEN.blit(b_rook, get_square(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(board, chess.BISHOP, chess.BLACK):
+        SCREEN.blit(b_bishop, get_square(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(board, chess.KNIGHT, chess.BLACK):
+        SCREEN.blit(b_knight, get_square(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(board, chess.PAWN, chess.BLACK):
+        SCREEN.blit(b_pawn, get_square(chess.bb2str(position)))
+        
+    for position in chess.colored_piece_gen(board, chess.KING, chess.WHITE):
+        SCREEN.blit(w_king, get_square(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(board, chess.QUEEN, chess.WHITE):
+        SCREEN.blit(w_queen, get_square(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(board, chess.ROOK, chess.WHITE):
+        SCREEN.blit(w_rook, get_square(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(board, chess.BISHOP, chess.WHITE):
+        SCREEN.blit(w_bishop, get_square(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(board, chess.KNIGHT, chess.WHITE):
+        SCREEN.blit(w_knight, get_square(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(board, chess.PAWN, chess.WHITE):
+        SCREEN.blit(w_pawn, get_square(chess.bb2str(position)))
+    
+ 
+game = chess.Game('1r1q2k1/B4p1p/4r1p1/3n2P1/b4P2/7P/8/3R2K1 w - - 1 28')
+print_board(game.board)
  
 while True:
-    clock.tick(15)
+    CLOCK.tick(15)
      
     for event in pygame.event.get():
         if event.type == pygame.QUIT: sys.exit()
