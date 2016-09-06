@@ -28,7 +28,10 @@ WHITE_KNIGHT = pygame.transform.scale(pygame.image.load('images/white_knight.png
 WHITE_PAWN   = pygame.transform.scale(pygame.image.load('images/white_pawn.png'),   (SQUARE_SIDE,SQUARE_SIDE) )
 
 CLOCK = pygame.time.Clock()
+CLOCK_TICK = 15
+
 SCREEN = pygame.display.set_mode(SCREEN_SIZE)
+
 pygame.display.set_icon(pygame.image.load('images/chess_icon.ico'))
 pygame.display.set_caption('Chess Game')
 
@@ -50,12 +53,12 @@ def get_square_rect(square):
 
 def coord2str(position, color=chess.WHITE):
     if color == chess.WHITE:
-        file_index = int(position[0]/50)
-        rank_index = 7 - int(position[1]/50)
+        file_index = int(position[0]/SQUARE_SIDE)
+        rank_index = 7 - int(position[1]/SQUARE_SIDE)
         return chess.FILES[file_index] + chess.RANKS[rank_index]
     if color == chess.BLACK:
-        file_index = 7 - int(position[0]/50)
-        rank_index = int(position[1]/50)
+        file_index = 7 - int(position[0]/SQUARE_SIDE)
+        rank_index = int(position[1]/SQUARE_SIDE)
         return chess.FILES[file_index] + chess.RANKS[rank_index]
     
 def print_board(board, color=chess.WHITE):
@@ -96,7 +99,7 @@ def play_as(game, color):
     ongoing = True
     
     while True:
-        CLOCK.tick(15)
+        CLOCK.tick(CLOCK_TICK)
         print_board(game.board, color)
         
         if chess.game_ended(game):
