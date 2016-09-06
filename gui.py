@@ -103,6 +103,23 @@ def print_board(board, color=chess.WHITE):
         SCREEN.blit(WHITE_PAWN, get_square_rect(chess.bb2str(position)))
         
     pygame.display.flip()
+    
+def set_title(title):
+    pygame.display.set_caption(title)
+    pygame.display.flip()
+    
+def make_AI_move(game, color):
+    set_title(SCREEN_TITLE + ' - Calculating move...')
+    new_game = chess.make_move(game, chess.get_AI_move(game, 2))
+    set_title(SCREEN_TITLE)
+    print_board(new_game.board, color)
+    return new_game
+
+def try_move(game, attempted_move):
+    for move in chess.legal_moves_gen(game, game.to_move):
+        if move == attempted_move:
+            game = chess.make_move(game, move)
+    return game
 
 def play_as(game, color):
     run = True
@@ -115,20 +132,14 @@ def play_as(game, color):
             print_board(game.board, color)
             
             if chess.game_ended(game):
-                pygame.display.set_caption(SCREEN_TITLE + ' - ' + chess.get_outcome(game))
-                pygame.display.flip()
+                set_title(SCREEN_TITLE + ' - ' + chess.get_outcome(game))
                 ongoing = False
             
             if ongoing and game.to_move == chess.opposing_color(color):
-                pygame.display.set_caption(SCREEN_TITLE + ' - Calculating move...')
-                pygame.display.flip()
-                game = chess.make_move(game, chess.get_AI_move(game, 2))
-                pygame.display.set_caption(SCREEN_TITLE)
-                print_board(game.board, color)
+                game = make_AI_move(game, color)
             
             if chess.game_ended(game):
-                pygame.display.set_caption(SCREEN_TITLE + ' - ' + chess.get_outcome(game))
-                pygame.display.flip()
+                set_title(SCREEN_TITLE + ' - ' + chess.get_outcome(game))
                 ongoing = False
              
             for event in pygame.event.get():
@@ -141,24 +152,20 @@ def play_as(game, color):
                 if event.type == pygame.MOUSEBUTTONUP:
                     arriving_square = coord2str(event.pos, color)
                     
-                    if ongoing:
-                        for move in chess.legal_moves_gen(game, color):
-                            if move == [chess.str2bb(leaving_square), chess.str2bb(arriving_square)]:
-                                game = chess.make_move(game, move)
+                    if ongoing and game.to_move == color:
+                        move = [chess.str2bb(leaving_square), chess.str2bb(arriving_square)]
+                        game = try_move(game, move)
+                        print_board(game.board, color)
                 
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         run = False
                     if event.key == 104 and ongoing: # H key
-                        pygame.display.set_caption(SCREEN_TITLE + ' - Calculating move...')
-                        pygame.display.flip()
-                        game = chess.make_move(game, chess.get_AI_move(game, 2))
-                        pygame.display.set_caption(SCREEN_TITLE)
-                        print_board(game.board, color)
+                        game = make_AI_move(game, color)
                     if event.key == 117: # U key
                         game = chess.unmake_move(game)
                         game = chess.unmake_move(game)
-                        pygame.display.set_caption(SCREEN_TITLE)
+                        set_title(SCREEN_TITLE)
                         print_board(game.board, color)
                         ongoing = True
     except:
