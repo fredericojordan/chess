@@ -998,7 +998,7 @@ def evaluated_move(game, color):
         evaluation = evaluate_game(make_move(game, move))
         
         if is_checkmate(make_move(game, move), opposing_color(game.to_move)):
-            return move
+            return [move, evaluation]
         
         if (color == WHITE and evaluation > best_score) or \
            (color == BLACK and evaluation < best_score):
