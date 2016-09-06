@@ -121,10 +121,10 @@ def play_as(game, color):
                 sys.exit()
             
             if event.type == pygame.MOUSEBUTTONDOWN:
-                leaving_square = coord2str(pygame.mouse.get_pos(), color)
+                leaving_square = coord2str(event.pos, color)
                 
             if event.type == pygame.MOUSEBUTTONUP:
-                arriving_square = coord2str(pygame.mouse.get_pos(), color)
+                arriving_square = coord2str(event.pos, color)
                 
                 if ongoing:
                     for move in chess.legal_moves_gen(game, color):
