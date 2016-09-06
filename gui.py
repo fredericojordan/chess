@@ -146,7 +146,11 @@ def play_as(game, color):
                 if event.key == pygame.K_ESCAPE:
                     sys.exit()
                 if event.key == 104 and ongoing: # H key
+                    pygame.display.set_caption('Chess Game - Calculating move...')
+                    pygame.display.flip()
                     game = chess.make_move(game, chess.get_AI_move(game, 2))
+                    pygame.display.set_caption('Chess Game')
+                    print_board(game.board, color)
                 if event.key == 117: # U key
                     game = chess.unmake_move(game)
                     game = chess.unmake_move(game)
