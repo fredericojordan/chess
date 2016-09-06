@@ -10,6 +10,7 @@ pygame.init()
 SQUARE_SIDE = 50
 SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT) = (8*SQUARE_SIDE, 8*SQUARE_SIDE)
 
+LIGHT_RED  = (240,180,180)
 LIGHT_GRAY = (240,240,240)
 DARK_GRAY  = (200,200,200)
 
@@ -37,14 +38,16 @@ pygame.display.set_caption('Chess Game')
 
 def print_empty_board():
     SCREEN.fill(LIGHT_GRAY)
-    print_dark_squares()
+    paint_dark_squares()
+    
+def paint_square(square, square_color):
+    col = chess.FILES.index(square[0])
+    row = 7-chess.RANKS.index(square[1])
+    pygame.draw.rect(SCREEN, square_color, (SQUARE_SIDE*col,SQUARE_SIDE*row,SQUARE_SIDE,SQUARE_SIDE), 0)
 
-def print_dark_squares():
+def paint_dark_squares():
     for position in chess.single_gen(chess.DARK_SQUARES):
-        square = chess.bb2str(position)
-        col = chess.FILES.index(square[0])
-        row = 7-chess.RANKS.index(square[1])
-        pygame.draw.rect(SCREEN, DARK_GRAY, (SQUARE_SIDE*col,SQUARE_SIDE*row,SQUARE_SIDE,SQUARE_SIDE), 0)
+        paint_square(chess.bb2str(position), DARK_GRAY)
             
 def get_square_rect(square):
     col = chess.FILES.index(square[0])
@@ -66,6 +69,11 @@ def print_board(board, color=chess.WHITE):
         board = chess.rotate_board(board)
     
     print_empty_board()
+    
+    if chess.is_check(board, chess.WHITE):
+        paint_square(chess.bb2str(chess.get_king(board, chess.WHITE)), LIGHT_RED)
+    if chess.is_check(board, chess.BLACK):
+        paint_square(chess.bb2str(chess.get_king(board, chess.BLACK)), LIGHT_RED)
     
     for position in chess.colored_piece_gen(board, chess.KING, chess.BLACK):
         SCREEN.blit(BLACK_KING, get_square_rect(chess.bb2str(position)))
