@@ -965,7 +965,29 @@ def is_checkmate(game, color):
 def is_stalemate(game):
     return count_legal_moves(game, game.to_move) == 0 and not is_check(game.board, game.to_move)
 
-def insufficient_material(game): # TODO: other insufficient positions
+def is_same_position(FEN_a, FEN_b):
+    FEN_a_list = FEN_a.split(' ')
+    FEN_b_list = FEN_b.split(' ')
+    return FEN_a_list[0] == FEN_b_list[0] and \
+           FEN_a_list[1] == FEN_b_list[1] and \
+           FEN_a_list[2] == FEN_b_list[2] and \
+           FEN_a_list[3] == FEN_b_list[3]
+
+def has_threefold_repetition(game):
+    current_pos = game.position_history[-1]
+    position_count = 0
+    for position in game.position_history:
+        if is_same_position(current_pos, position):
+            position_count += 1
+    return position_count >= 3
+
+def is_under_50_move_rule(game):
+    return game.halfmove_clock >= 100
+
+def is_under_75_move_rule(game):
+    return game.halfmove_clock >= 150
+
+def has_insufficient_material(game): # TODO: other insufficient positions
     if material_sum(game.board, WHITE) + material_sum(game.board, BLACK) == 2*PIECE_VALUES[KING]:
         return True
     if material_sum(game.board, WHITE) == PIECE_VALUES[KING]:
@@ -982,7 +1004,8 @@ def game_ended(game):
     return is_checkmate(game, WHITE) or \
            is_checkmate(game, BLACK) or \
            is_stalemate(game) or \
-           insufficient_material(game)
+           has_insufficient_material(game) or \
+           is_under_75_move_rule(game)
 
 def random_move(game, color):
     legal_moves = []
@@ -1124,8 +1147,10 @@ def get_outcome(game):
         return 'BLACK wins!'
     if is_checkmate(game, BLACK):
         return 'WHITE wins!'
-    if insufficient_material(game):
+    if has_insufficient_material(game):
         return 'Draw by insufficient material!'
+    if is_under_75_move_rule(game):
+        return 'Draw by 75-move rule!'
 
 def play_as_white(game=Game()):
     print('Playing as white!')
