@@ -230,5 +230,4 @@ def play_random_color(game=chess.Game()):
     play_as(game, color)
 
 # chess.verbose = True
-# play_random_color()
-play_as_black(chess.Game('r4rk1/1bp1bppp/p4n2/1p1P4/3p4/1B5P/PPPPKPP1/RNB2R2 b - - 2 13'))
+play_random_color()
