@@ -8,24 +8,28 @@ from random import choice
 from traceback import format_exc
 from sys import stderr
 from time import strftime
+from copy import deepcopy
 pygame.init()
 
 SQUARE_SIDE = 50
 
-CHECK_RED   = (240, 150, 150)
+RED_CHECK     = (240, 150, 150)
+WHITE         = (255, 255, 255)
+BLUE_LIGHT    = (140, 184, 219)
+BLUE_DARK     = (91,  131, 159)
+GRAY_LIGHT    = (240, 240, 240)
+GRAY_DARK     = (200, 200, 200)
+BROWN_LIGHT   = (238, 207, 169)
+BROWN_DARK    = (192, 136, 92)
+SERIOUS_LIGHT = (212, 202, 190)
+SERIOUS_DARK  = (100, 92,  89)
 
-LIGHT_GRAY  = (240, 240, 240)
-DARK_GRAY   = (200, 200, 200)
-LIGHT_BROWN = (240, 210, 140)
-DARK_BROWN  = (200, 140, 30)
-LIGHT_BLUE  = (220, 220, 250)
-DARK_BLUE   = (150, 150, 200)
-
-BOARD_COLORS = [(LIGHT_GRAY, DARK_GRAY),
-                (LIGHT_BROWN, DARK_BROWN),
-                (LIGHT_BLUE, DARK_BLUE)]
+BOARD_COLORS = [(GRAY_LIGHT, GRAY_DARK),
+                (BROWN_LIGHT, BROWN_DARK),
+                (BLUE_LIGHT, BLUE_DARK),
+                (WHITE, BLUE_LIGHT),
+                (SERIOUS_LIGHT, SERIOUS_DARK)]
 BOARD_COLOR = choice(BOARD_COLORS)
-
 
 BLACK_KING   = pygame.image.load('images/black_king.png')
 BLACK_QUEEN  = pygame.image.load('images/black_queen.png')
@@ -85,40 +89,42 @@ def coord2str(position, color=chess.WHITE):
         return chess.FILES[file_index] + chess.RANKS[rank_index]
     
 def print_board(board, color=chess.WHITE):
+    if color == chess.WHITE:
+        printed_board = board
     if color == chess.BLACK:
-        board = chess.rotate_board(board)
+        printed_board = chess.rotate_board(board)
     
     print_empty_board()
     
     if chess.is_check(board, chess.WHITE):
-        paint_square(chess.bb2str(chess.get_king(board, chess.WHITE)), CHECK_RED)
+        paint_square(chess.bb2str(chess.get_king(printed_board, chess.WHITE)), RED_CHECK)
     if chess.is_check(board, chess.BLACK):
-        paint_square(chess.bb2str(chess.get_king(board, chess.BLACK)), CHECK_RED)
+        paint_square(chess.bb2str(chess.get_king(printed_board, chess.BLACK)), RED_CHECK)
     
-    for position in chess.colored_piece_gen(board, chess.KING, chess.BLACK):
+    for position in chess.colored_piece_gen(printed_board, chess.KING, chess.BLACK):
         SCREEN.blit(pygame.transform.scale(BLACK_KING,   (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
-    for position in chess.colored_piece_gen(board, chess.QUEEN, chess.BLACK):
+    for position in chess.colored_piece_gen(printed_board, chess.QUEEN, chess.BLACK):
         SCREEN.blit(pygame.transform.scale(BLACK_QUEEN,  (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
-    for position in chess.colored_piece_gen(board, chess.ROOK, chess.BLACK):
+    for position in chess.colored_piece_gen(printed_board, chess.ROOK, chess.BLACK):
         SCREEN.blit(pygame.transform.scale(BLACK_ROOK,   (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
-    for position in chess.colored_piece_gen(board, chess.BISHOP, chess.BLACK):
+    for position in chess.colored_piece_gen(printed_board, chess.BISHOP, chess.BLACK):
         SCREEN.blit(pygame.transform.scale(BLACK_BISHOP, (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
-    for position in chess.colored_piece_gen(board, chess.KNIGHT, chess.BLACK):
+    for position in chess.colored_piece_gen(printed_board, chess.KNIGHT, chess.BLACK):
         SCREEN.blit(pygame.transform.scale(BLACK_KNIGHT, (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
-    for position in chess.colored_piece_gen(board, chess.PAWN, chess.BLACK):
+    for position in chess.colored_piece_gen(printed_board, chess.PAWN, chess.BLACK):
         SCREEN.blit(pygame.transform.scale(BLACK_PAWN,   (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
         
-    for position in chess.colored_piece_gen(board, chess.KING, chess.WHITE):
+    for position in chess.colored_piece_gen(printed_board, chess.KING, chess.WHITE):
         SCREEN.blit(pygame.transform.scale(WHITE_KING,   (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
-    for position in chess.colored_piece_gen(board, chess.QUEEN, chess.WHITE):
+    for position in chess.colored_piece_gen(printed_board, chess.QUEEN, chess.WHITE):
         SCREEN.blit(pygame.transform.scale(WHITE_QUEEN,  (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
-    for position in chess.colored_piece_gen(board, chess.ROOK, chess.WHITE):
+    for position in chess.colored_piece_gen(printed_board, chess.ROOK, chess.WHITE):
         SCREEN.blit(pygame.transform.scale(WHITE_ROOK,   (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
-    for position in chess.colored_piece_gen(board, chess.BISHOP, chess.WHITE):
+    for position in chess.colored_piece_gen(printed_board, chess.BISHOP, chess.WHITE):
         SCREEN.blit(pygame.transform.scale(WHITE_BISHOP, (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
-    for position in chess.colored_piece_gen(board, chess.KNIGHT, chess.WHITE):
+    for position in chess.colored_piece_gen(printed_board, chess.KNIGHT, chess.WHITE):
         SCREEN.blit(pygame.transform.scale(WHITE_KNIGHT, (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
-    for position in chess.colored_piece_gen(board, chess.PAWN, chess.WHITE):
+    for position in chess.colored_piece_gen(printed_board, chess.PAWN, chess.WHITE):
         SCREEN.blit(pygame.transform.scale(WHITE_PAWN,   (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
         
     pygame.display.flip()
@@ -177,7 +183,7 @@ def play_as(game, color):
                         print_board(game.board, color)
                 
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key == pygame.K_ESCAPE or event.key == 113:
                         run = False
                     if event.key == 104 and ongoing: # H key
                         game = make_AI_move(game, color)
@@ -189,8 +195,13 @@ def play_as(game, color):
                         ongoing = True
                     if event.key == 99: # C key
                         global BOARD_COLOR
-                        BOARD_COLOR = choice(BOARD_COLORS)
+                        new_colors = deepcopy(BOARD_COLORS)
+                        new_colors.remove(BOARD_COLOR)
+                        BOARD_COLOR = choice(new_colors)
                         print_board(game.board, color)
+                    if event.key == 112: # P key
+                        print(game.get_move_list() + '\n')
+                        print('\n'.join(game.position_history) + '\n')
                 
                 if event.type == pygame.VIDEORESIZE:
                     if SCREEN.get_height() != event.h:
@@ -219,4 +230,5 @@ def play_random_color(game=chess.Game()):
     play_as(game, color)
 
 # chess.verbose = True
-play_random_color()
+# play_random_color()
+play_as_black(chess.Game('r4rk1/1bp1bppp/p4n2/1p1P4/3p4/1B5P/PPPPKPP1/RNB2R2 b - - 2 13'))
