@@ -909,10 +909,14 @@ def material_sum(board, color):
 def material_balance(board):
     return material_sum(board, WHITE) - material_sum(board, BLACK)
 
+def mobility_balance(game):
+    return count_legal_moves(game, WHITE) - count_legal_moves(game, BLACK)
+
 def evaluate_game(game):
     if is_checkmate(game, game.to_move):
         return checkmate_value(game.to_move)
-    return material_balance(game.board)
+    else:
+        return material_balance(game.board)
 
 def checkmate_value(color):
     if color == WHITE:
