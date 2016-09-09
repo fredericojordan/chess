@@ -202,10 +202,10 @@ def play_as(game, color):
         print(format_exc(), file=stderr)
         bug_file = open('bug_report.txt', 'a')
         bug_file.write('----- ' + strftime('%x %X') + ' -----\n')
-        bug_file.write(format_exc() + '\n')
-        bug_file.write('\n'.join(game.position_history))
-        bug_file.write('\n-----------------------------\n')
-        bug_file.write('\n')
+        bug_file.write(format_exc())
+        bug_file.write('\nGame history:\n\t')
+        bug_file.write('\n\t'.join(game.position_history))
+        bug_file.write('\n-----------------------------\n\n')
         bug_file.close()
 
 def play_as_white(game=chess.Game()):
