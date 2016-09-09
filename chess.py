@@ -1066,7 +1066,7 @@ def iterated_evaluated_move(game, color, depth=1):
         
     return [choice(best_moves), best_score]
 
-def alpha_beta(game, color, depth, alpha=checkmate_value(WHITE), beta=checkmate_value(BLACK)):    
+def alpha_beta(game, color, depth, alpha=-float('inf'), beta=float('inf')):    
     [simple_move, simple_evaluation] = evaluated_move(game, color)
     
     if depth == 1 or \
@@ -1171,8 +1171,8 @@ def get_AI_move(game, depth=2):
     if find_in_book(game):
         move = get_book_move(game)
     else:
-        move = iterated_evaluated_move(game, game.to_move, depth)[0]
-#         move = alpha_beta(game, game.to_move, depth)[0]
+#         move = iterated_evaluated_move(game, game.to_move, depth)[0]
+        move = alpha_beta(game, game.to_move, depth)[0]
 
     end_time = time()
     if verbose:
