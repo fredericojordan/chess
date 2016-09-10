@@ -51,6 +51,7 @@ c2c4 g8f6 g1f3 e7e6 b1c3 d7d5 d2d4 f8e7 c1g5 h7h6 g5h4 e8g8 e2e3 b7b6
 c2c4 g8f6 g1f3 e7e6 g2g3 d7d5 f1g2 f8e7
 c2c4 g8f6 g1f3 g7g6 b1c3 f8g7 e2e4
 c2c4 g8f6 g1f3 g7g6 g2g3 f8g7 f1g2 e8g8
+d2d4 d7d5 b1c3 g8f6
 d2d4 d7d5 c2c4 c7c6 b1c3 g8f6 e2e3
 d2d4 d7d5 c2c4 c7c6 b1c3 g8f6 g1f3 d5c4 a2a4 c8f5 e2e3 e7e6 f1c4
 d2d4 d7d5 c2c4 c7c6 b1c3 g8f6 g1f3 e7e6 c1g5
