@@ -26,9 +26,11 @@ from copy import deepcopy
 from random import choice
 from time import sleep, time
 
-COLOR_MASK = 1 << 4
-WHITE = 0 << 4
-BLACK = 1 << 4
+COLOR_MASK = 1 << 3
+WHITE = 0 << 3
+BLACK = 1 << 3
+
+ENDGAME_PIECE_COUNT = 7
 
 PIECE_MASK = 0b111
 EMPTY  = 0
@@ -103,8 +105,60 @@ PIECE_CODES = { WHITE|KING:  'K',
                 EMPTY:       '.' }
 PIECE_CODES.update({v: k for k, v in PIECE_CODES.items()})
 
-verbose = False
+DOUBLED_PAWN_PENALTY      = 10
+ISOLATED_PAWN_PENALTY     = 20
+BACKWARDS_PAWN_PENALTY    = 8
+PASSED_PAWN_BONUS         = 20
+ROOK_SEMI_OPEN_FILE_BONUS = 10
+ROOK_OPEN_FILE_BONUS      = 15
+ROOK_ON_SEVENTH_BONUS     = 20
 
+PAWN_BONUS = [0,   0,   0,   0,   0,   0,   0,   0,
+              0,   0,   0, -40, -40,   0,   0,   0,
+              1,   2,   3, -10, -10,   3,   2,   1,
+              2,   4,   6,   8,   8,   6,   4,   2,
+              3,   6,   9,  12,  12,   9,   6,   3,
+              4,   8,  12,  16,  16,  12,   8,   4,
+              5,  10,  15,  20,  20,  15,  10,   5,
+              0,   0,   0,   0,   0,   0,   0,   0]
+
+KNIGHT_BONUS = [-10, -30, -10, -10, -10, -10, -30, -10,
+                -10,   0,   0,   0,   0,   0,   0, -10,
+                -10,   0,   5,   5,   5,   5,   0, -10,
+                -10,   0,   5,  10,  10,   5,   0, -10,
+                -10,   0,   5,  10,  10,   5,   0, -10,
+                -10,   0,   5,   5,   5,   5,   0, -10,
+                -10,   0,   0,   0,   0,   0,   0, -10,
+                -10, -10, -10, -10, -10, -10, -10, -10]
+
+BISHOP_BONUS = [-10, -10, -20, -10, -10, -20, -10, -10,
+                -10,   0,   0,   0,   0,   0,   0, -10,
+                -10,   0,   5,   5,   5,   5,   0, -10,
+                -10,   0,   5,  10,  10,   5,   0, -10,
+                -10,   0,   5,  10,  10,   5,   0, -10,
+                -10,   0,   5,   5,   5,   5,   0, -10,
+                -10,   0,   0,   0,   0,   0,   0, -10,
+                -10, -10, -10, -10, -10, -10, -10, -10]
+
+KING_BONUS = [  0,  20,  40, -20,   0, -20,  40,  20,
+              -20, -20, -20, -20, -20, -20, -20, -20,
+              -40, -40, -40, -40, -40, -40, -40, -40,
+              -40, -40, -40, -40, -40, -40, -40, -40,
+              -40, -40, -40, -40, -40, -40, -40, -40,
+              -40, -40, -40, -40, -40, -40, -40, -40,
+              -40, -40, -40, -40, -40, -40, -40, -40,
+              -40, -40, -40, -40, -40, -40, -40, -40]
+
+KING_ENDGAME_BONUS = [ 0,  10,  20,  30,  30,  20,  10,   0,
+                      10,  20,  30,  40,  40,  30,  20,  10,
+                      20,  30,  40,  50,  50,  40,  30,  20,
+                      30,  40,  50,  60,  60,  50,  40,  30,
+                      30,  40,  50,  60,  60,  50,  40,  30,
+                      20,  30,  40,  50,  50,  40,  30,  20,
+                      10,  20,  30,  40,  40,  30,  20,  10,
+                       0,  10,  20,  30,  30,  20,  10,   0]
+
+verbose = False
 
 # ========== CHESS GAME ==========
 
@@ -343,6 +397,18 @@ def rotate_board(board):
     rotated_board.reverse()
     return rotated_board
 
+def flip_board_v(board):
+    flip = [56,  57,  58,  59,  60,  61,  62,  63,
+            48,  49,  50,  51,  52,  53,  54,  55,
+            40,  41,  42,  43,  44,  45,  46,  47,
+            32,  33,  34,  35,  36,  37,  38,  39,
+            24,  25,  26,  27,  28,  29,  30,  31,
+            16,  17,  18,  19,  20,  21,  22,  23,
+             8,   9,  10,  11,  12,  13,  14,  15,
+             0,   1,   2,   3,   4,   5,   6,   7]
+    
+    return deepcopy([board[flip[i]] for i in range(64)])
+
 def east_one(bitboard):
     return (bitboard << 1) & nnot(FILE_A)
 
@@ -494,6 +560,9 @@ def get_filter(filter_str):
         return get_rank(filter_str)
 
 # ========== PAWN ==========
+
+def get_all_pawns(board):
+    return list2int([ i&PIECE_MASK == PAWN for i in board ])
 
 def get_pawns(board, color):
     return list2int([ i&(COLOR_MASK|PIECE_MASK) == color|PAWN for i in board ])
@@ -916,7 +985,58 @@ def evaluate_game(game):
     if is_checkmate(game, game.to_move):
         return win_score(game.to_move)
     else:
-        return material_balance(game.board) + 10*mobility_balance(game)
+        return material_balance(game.board) + positional_balance(game)# + 10*mobility_balance(game)
+
+def positional_balance(game):
+    return positional_bonus(game, WHITE) - positional_bonus(game, BLACK) 
+
+def positional_bonus(game, color):
+    bonus = 0
+    
+    if color == WHITE:
+        board = game.board
+    elif color == BLACK:
+        board = flip_board_v(game.board)
+    
+    for pawn in colored_piece_gen(board, PAWN, color):
+        bonus += PAWN_BONUS[bb2index(pawn)]
+    for knight in colored_piece_gen(board, KNIGHT, color):
+        bonus += KNIGHT_BONUS[bb2index(knight)]
+    for bishop in colored_piece_gen(board, BISHOP, color):
+        bonus += BISHOP_BONUS[bb2index(bishop)]
+    
+    for rook in colored_piece_gen(board, ROOK, color):
+        if is_open_file(rook, board):
+            bonus += ROOK_OPEN_FILE_BONUS
+        elif is_semi_open_file(rook, board):
+            bonus += ROOK_SEMI_OPEN_FILE_BONUS
+        if rook & RANK_7:
+            bonus += ROOK_ON_SEVENTH_BONUS
+    
+    if is_endgame(board):
+        bonus += KING_ENDGAME_BONUS[bb2index(get_king(board, color))]
+    else:
+        bonus += KING_BONUS[bb2index(get_king(board, color))]
+    
+    return bonus
+
+def is_endgame(board):
+    return count_pieces(occupied_squares(board)) <= ENDGAME_PIECE_COUNT
+
+def is_open_file(bitboard, board):
+    for f in FILES:
+        rank_filter = get_file(f)
+        if bitboard & rank_filter:
+            return count_pieces(get_all_pawns(board)&rank_filter) == 0
+
+def is_semi_open_file(bitboard, board):
+    for f in FILES:
+        rank_filter = get_file(f)
+        if bitboard & rank_filter:
+            return count_pieces(get_all_pawns(board)&rank_filter) == 1
+
+def count_pieces(bitboard):
+    return bin(bitboard).count("1")
 
 def win_score(color):
     if color == WHITE:
@@ -1066,7 +1186,7 @@ def minimax(game, color, depth=1):
         
     return [choice(best_moves), best_score]
 
-def alpha_beta(game, color, depth, alpha=-float('inf'), beta=float('inf')):    
+def alpha_beta(game, color, depth, alpha=-float('inf'), beta=float('inf')):
     [simple_move, simple_evaluation] = evaluated_move(game, color)
     
     if depth == 1 or \
@@ -1077,9 +1197,14 @@ def alpha_beta(game, color, depth, alpha=-float('inf'), beta=float('inf')):
         
     if color == WHITE:
         for move in legal_moves_gen(game, color):
-            
+            if verbose:
+                print('\t'*depth + str(depth) + '. evaluating ' + PIECE_CODES[get_piece(game.board, move[0])] + move2str(move))
+                
             new_game = make_move(game, move)
             [_, score] = alpha_beta(new_game, opposing_color(color), depth-1, alpha, beta)
+            
+            if verbose:
+                print('\t'*depth + str(depth) + '. ' + str(score) + ' [{},{}]'.format(alpha, beta))
             
             if score == win_score(opposing_color(color)):
                 return [move, score]
@@ -1090,13 +1215,24 @@ def alpha_beta(game, color, depth, alpha=-float('inf'), beta=float('inf')):
                 alpha = score
                 best_moves = [move]
                 if alpha > beta: # alpha-beta cutoff
+                    if verbose:
+                        print('\t'*depth + 'cutoff')
                     break
-        return [choice(best_moves), alpha]
+        if best_moves:
+            return [choice(best_moves), alpha]
+        else:
+            return [None, alpha]
     
     if color == BLACK:
         for move in legal_moves_gen(game, color):
+            if verbose:
+                print('\t'*depth + str(depth) + '. evaluating ' + PIECE_CODES[get_piece(game.board, move[0])] + move2str(move))
+                
             new_game = make_move(game, move)
             [_, score] = alpha_beta(new_game, opposing_color(color), depth-1, alpha, beta)
+            
+            if verbose:
+                print('\t'*depth + str(depth) + '. ' + str(score) + ' [{},{}]'.format(alpha, beta))
             
             if score == win_score(opposing_color(color)):
                 return [move, score]
@@ -1107,8 +1243,13 @@ def alpha_beta(game, color, depth, alpha=-float('inf'), beta=float('inf')):
                 beta = score
                 best_moves = [move]
                 if alpha > beta: # alpha-beta cutoff
+                    if verbose:
+                        print('\t'*depth + 'cutoff')
                     break
-        return [choice(best_moves), beta]
+        if best_moves:
+            return [choice(best_moves), beta]
+        else:
+            return [None, beta]
 
 def parse_move_code(game, move_code):
     move_code = move_code.replace(" ","")
@@ -1181,7 +1322,7 @@ def get_AI_move(game, depth=2):
 
     end_time = time()
     if verbose:
-        print('Found move ' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])) + ' in {:.3f} seconds'.format(end_time-start_time))
+        print('Found move ' + PIECE_CODES[get_piece(game.board, move[0])] + ' from ' + str(bb2str(move[0])) + ' to ' + str(bb2str(move[1])) + ' in {:.3f} seconds'.format(end_time-start_time) + ' ({},{})'.format(evaluate_game(game), evaluate_game(make_move(game, move))))
     return move
 
 def print_outcome(game):
