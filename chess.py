@@ -914,15 +914,15 @@ def mobility_balance(game):
 
 def evaluate_game(game):
     if is_checkmate(game, game.to_move):
-        return checkmate_value(game.to_move)
+        return win_score(game.to_move)
     else:
-        return material_balance(game.board)# + 10*mobility_balance(game)
+        return material_balance(game.board) + 10*mobility_balance(game)
 
-def checkmate_value(color):
+def win_score(color):
     if color == WHITE:
-        return -PIECE_VALUES[KING]
+        return -10*PIECE_VALUES[KING]
     if color == BLACK:
-        return PIECE_VALUES[KING]
+        return 10*PIECE_VALUES[KING]
     
 def pseudo_legal_moves_gen(game, color):
     for pawn in colored_piece_gen(game.board, PAWN, color):
@@ -1018,7 +1018,7 @@ def random_move(game, color):
     return choice(legal_moves)
 
 def evaluated_move(game, color):
-    best_score = checkmate_value(color)
+    best_score = win_score(color)
     best_moves = []
     
     for move in legal_moves_gen(game, color):
@@ -1036,25 +1036,25 @@ def evaluated_move(game, color):
                 
     return [choice(best_moves), best_score]
 
-def iterated_evaluated_move(game, color, depth=1):
+def minimax(game, color, depth=1):
     [simple_move, simple_evaluation] = evaluated_move(game, color)
     
     if depth == 1 or \
-       simple_evaluation == checkmate_value(opposing_color(color)):
+       simple_evaluation == win_score(opposing_color(color)):
         return [simple_move, simple_evaluation]
     
-    best_score = checkmate_value(color)
+    best_score = win_score(color)
     best_moves = []
     
     for move in legal_moves_gen(game, color):
         his_game = make_move(game, move)
         
         if is_checkmate(his_game, his_game.to_move):
-            return [move, checkmate_value(his_game.to_move)]
+            return [move, win_score(his_game.to_move)]
             
-        [_, evaluation] = iterated_evaluated_move(his_game, opposing_color(color), depth-1)
+        [_, evaluation] = minimax(his_game, opposing_color(color), depth-1)
         
-        if evaluation == checkmate_value(opposing_color(color)):
+        if evaluation == win_score(opposing_color(color)):
             return [move, evaluation]
         
         if (color == WHITE and evaluation > best_score) or \
@@ -1070,40 +1070,45 @@ def alpha_beta(game, color, depth, alpha=-float('inf'), beta=float('inf')):
     [simple_move, simple_evaluation] = evaluated_move(game, color)
     
     if depth == 1 or \
-       simple_evaluation == checkmate_value(opposing_color(color)):
+       simple_evaluation == win_score(opposing_color(color)):
         return [simple_move, simple_evaluation]
 
-    best_move = None
+    best_moves = []
         
     if color == WHITE:
         for move in legal_moves_gen(game, color):
+            
             new_game = make_move(game, move)
             [_, score] = alpha_beta(new_game, opposing_color(color), depth-1, alpha, beta)
             
-            if score == checkmate_value(opposing_color(color)):
+            if score == win_score(opposing_color(color)):
                 return [move, score]
             
+            if score == alpha:
+                best_moves.append(move)
             if score > alpha: # white maximizes her score
                 alpha = score
-                best_move = move
-                if alpha >= beta: # alpha-beta cutoff
+                best_moves = [move]
+                if alpha > beta: # alpha-beta cutoff
                     break
-        return [best_move, alpha]
+        return [choice(best_moves), alpha]
     
     if color == BLACK:
         for move in legal_moves_gen(game, color):
             new_game = make_move(game, move)
             [_, score] = alpha_beta(new_game, opposing_color(color), depth-1, alpha, beta)
             
-            if score == checkmate_value(opposing_color(color)):
+            if score == win_score(opposing_color(color)):
                 return [move, score]
             
+            if score == beta:
+                best_moves.append(move)
             if score < beta: # black minimizes his score
                 beta = score
-                best_move = move
-                if alpha >= beta: # alpha-beta cutoff
+                best_moves = [move]
+                if alpha > beta: # alpha-beta cutoff
                     break
-        return [best_move, beta]
+        return [choice(best_moves), beta]
 
 def parse_move_code(game, move_code):
     move_code = move_code.replace(" ","")
@@ -1171,7 +1176,7 @@ def get_AI_move(game, depth=2):
     if find_in_book(game):
         move = get_book_move(game)
     else:
-#         move = iterated_evaluated_move(game, game.to_move, depth)[0]
+#         move = minimax(game, game.to_move, depth)[0]
         move = alpha_beta(game, game.to_move, depth)[0]
 
     end_time = time()
