@@ -12,6 +12,7 @@ from copy import deepcopy
 pygame.init()
 
 SQUARE_SIDE = 50
+AI_SEARCH_DEPTH = 2
 
 RED_CHECK     = (240, 150, 150)
 WHITE         = (255, 255, 255)
@@ -135,7 +136,7 @@ def set_title(title):
     
 def make_AI_move(game, color):
     set_title(SCREEN_TITLE + ' - Calculating move...')
-    new_game = chess.make_move(game, chess.get_AI_move(game, 2))
+    new_game = chess.make_move(game, chess.get_AI_move(game, AI_SEARCH_DEPTH))
     set_title(SCREEN_TITLE)
     print_board(new_game.board, color)
     return new_game
@@ -151,7 +152,6 @@ def play_as(game, color):
     ongoing = True
     
     try:
-    
         while run:
             CLOCK.tick(CLOCK_TICK)
             print_board(game.board, color)
@@ -199,9 +199,11 @@ def play_as(game, color):
                         new_colors.remove(BOARD_COLOR)
                         BOARD_COLOR = choice(new_colors)
                         print_board(game.board, color)
-                    if event.key == 112: # P key
+                    if event.key == 112 or event.key == 100: # P or D key
                         print(game.get_move_list() + '\n')
                         print('\n'.join(game.position_history) + '\n')
+                    if event.key == 101: # E key
+                        print('eval = ' + str(chess.evaluate_game(game)/100) + '\n')
                 
                 if event.type == pygame.VIDEORESIZE:
                     if SCREEN.get_height() != event.h:
