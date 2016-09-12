@@ -997,26 +997,36 @@ def positional_bonus(game, color):
         board = game.board
     elif color == BLACK:
         board = flip_board_v(game.board)
-    
-    for pawn in colored_piece_gen(board, PAWN, color):
-        bonus += PAWN_BONUS[bb2index(pawn)]
-    for knight in colored_piece_gen(board, KNIGHT, color):
-        bonus += KNIGHT_BONUS[bb2index(knight)]
-    for bishop in colored_piece_gen(board, BISHOP, color):
-        bonus += BISHOP_BONUS[bb2index(bishop)]
-    
-    for rook in colored_piece_gen(board, ROOK, color):
-        if is_open_file(rook, board):
-            bonus += ROOK_OPEN_FILE_BONUS
-        elif is_semi_open_file(rook, board):
-            bonus += ROOK_SEMI_OPEN_FILE_BONUS
-        if rook & RANK_7:
-            bonus += ROOK_ON_SEVENTH_BONUS
-    
-    if is_endgame(board):
-        bonus += KING_ENDGAME_BONUS[bb2index(get_king(board, color))]
-    else:
-        bonus += KING_BONUS[bb2index(get_king(board, color))]
+        
+    for index in range(64):
+        piece = board[index]
+        
+        if piece != EMPTY and piece&COLOR_MASK == color:
+            piece_type = piece&PIECE_MASK
+            
+            if piece_type == PAWN:
+                bonus += PAWN_BONUS[index]
+            elif piece_type == KNIGHT:
+                bonus += KNIGHT_BONUS[index]
+            elif piece_type == BISHOP:
+                bonus += BISHOP_BONUS[index]
+             
+            elif piece_type == ROOK:
+                position = 0b1 << index
+                 
+                if is_open_file(position, board):
+                    bonus += ROOK_OPEN_FILE_BONUS
+                elif is_semi_open_file(position, board):
+                    bonus += ROOK_SEMI_OPEN_FILE_BONUS
+                     
+                if position & RANK_7:
+                    bonus += ROOK_ON_SEVENTH_BONUS
+                 
+            elif piece_type == KING:
+                if is_endgame(board):
+                    bonus += KING_ENDGAME_BONUS[index]
+                else:
+                    bonus += KING_BONUS[index]
     
     return bonus
 
