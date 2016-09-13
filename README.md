@@ -1,7 +1,15 @@
 # chess
-Simple chess game being developed in python.
+Simple chess game being developed purely in python. GUI uses *pygame* library.
 
 Using some ideas from [Chess Programming Wiki](http://chessprogramming.wikispaces.com).
+
+## GUI Hotkeys
+
+- **C** - Change board [c]olor
+- **E** - [E]valuate position
+- **P** / **D** - [P]rint game info ([d]ump)
+- **U** - [U]ndo move
+- **H** - [H]elp (AI move)
 
 ## First Man-vs-AI game:
 
