@@ -14,22 +14,25 @@ pygame.init()
 SQUARE_SIDE = 50
 AI_SEARCH_DEPTH = 2
 
-RED_CHECK     = (240, 150, 150)
-WHITE         = (255, 255, 255)
-BLUE_LIGHT    = (140, 184, 219)
-BLUE_DARK     = (91,  131, 159)
-GRAY_LIGHT    = (240, 240, 240)
-GRAY_DARK     = (200, 200, 200)
-BROWN_LIGHT   = (238, 207, 169)
-BROWN_DARK    = (192, 136, 92)
-SERIOUS_LIGHT = (212, 202, 190)
-SERIOUS_DARK  = (100, 92,  89)
+RED_CHECK          = (240, 150, 150)
+WHITE              = (255, 255, 255)
+BLUE_LIGHT         = (140, 184, 219)
+BLUE_DARK          = (91,  131, 159)
+GRAY_LIGHT         = (240, 240, 240)
+GRAY_DARK          = (200, 200, 200)
+CHESSWEBSITE_LIGHT = (212, 202, 190)
+CHESSWEBSITE_DARK  = (100, 92,  89)
+LICHESS_LIGHT      = (240, 217, 181)
+LICHESS_DARK       = (181, 136, 99)
+LICHESS_GRAY_LIGHT = (164, 164, 164)
+LICHESS_GRAY_DARK  = (136, 136, 136)
 
 BOARD_COLORS = [(GRAY_LIGHT, GRAY_DARK),
-                (BROWN_LIGHT, BROWN_DARK),
                 (BLUE_LIGHT, BLUE_DARK),
                 (WHITE, BLUE_LIGHT),
-                (SERIOUS_LIGHT, SERIOUS_DARK)]
+                (CHESSWEBSITE_LIGHT, CHESSWEBSITE_DARK),
+                (LICHESS_LIGHT, LICHESS_DARK),
+                (LICHESS_GRAY_LIGHT, LICHESS_GRAY_DARK)]
 BOARD_COLOR = choice(BOARD_COLORS)
 
 BLACK_KING   = pygame.image.load('images/black_king.png')
