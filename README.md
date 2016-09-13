@@ -1,8 +1,14 @@
 # chess
-Simple chess game being developed purely in python. GUI uses *pygame* library.
+Simple chess game being developed purely in python. GUI uses [pygame](http://www.pygame.org/) library.
 
 Using some ideas from [Chess Programming Wiki](http://chessprogramming.wikispaces.com).
 
+## Instructions
+1. Make sure you have [Python](https://www.python.org/) and [pygame](http://www.pygame.org/) installed.
+2. Run the chess engine via the GUI:
+```bash
+python gui.py
+```
 ## GUI Hotkeys
 
 - **C** - Change board [c]olor
@@ -11,8 +17,12 @@ Using some ideas from [Chess Programming Wiki](http://chessprogramming.wikispace
 - **U** - [U]ndo move
 - **H** - [H]elp (AI move)
 
-## First Man-vs-AI game:
+## Screenshot
+![chess game](http://i.imgur.com/110ZGeZ.png)
 
+## Notable games
+### First Man-vs-AI game:
+```
 1. e4 f6
 2. d4 a5
 3. Nf3 e6
@@ -33,9 +43,9 @@ Using some ideas from [Chess Programming Wiki](http://chessprogramming.wikispace
   (16. Qd6#)
 17. Qd6#
 1-0
-
-## First AI-vs-AI win:
-
+```
+### First AI-vs-AI win:
+```
 1. d4 d6
 2. e4 Nf6
 3. Nc3 g6
@@ -102,3 +112,4 @@ Using some ideas from [Chess Programming Wiki](http://chessprogramming.wikispace
 64. Nf1 Qxf1+
 65. Rg1 Qh3#
 0-1
+```
