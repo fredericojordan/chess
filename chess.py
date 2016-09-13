@@ -974,10 +974,18 @@ def mobility_balance(game):
     return count_legal_moves(game, WHITE) - count_legal_moves(game, BLACK)
 
 def evaluate_game(game):
-    if is_checkmate(game, game.to_move):
-        return win_score(game.to_move)
+    if game_ended(game):
+        return evaluate_end_node(game)
     else:
         return material_balance(game.board) + positional_balance(game)# + 10*mobility_balance(game)
+
+def evaluate_end_node(game):
+    if is_checkmate(game, game.to_move):
+        return win_score(game.to_move)
+    elif is_stalemate(game) or \
+         has_insufficient_material(game) or \
+         is_under_75_move_rule(game):
+        return 0
 
 def positional_balance(game):
     return positional_bonus(game, WHITE) - positional_bonus(game, BLACK) 
@@ -1157,6 +1165,9 @@ def evaluated_move(game, color):
     return [choice(best_moves), best_score]
 
 def minimax(game, color, depth=1):
+    if game_ended(game):
+        return [None, evaluate_game(game)]
+    
     [simple_move, simple_evaluation] = evaluated_move(game, color)
     
     if depth == 1 or \
@@ -1187,6 +1198,9 @@ def minimax(game, color, depth=1):
     return [choice(best_moves), best_score]
 
 def alpha_beta(game, color, depth, alpha=-float('inf'), beta=float('inf')):
+    if game_ended(game):
+        return [None, evaluate_game(game)]
+    
     [simple_move, simple_evaluation] = evaluated_move(game, color)
     
     if depth == 1 or \
