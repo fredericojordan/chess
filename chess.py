@@ -932,14 +932,6 @@ def queen_moves(moving_piece, board, color):
 
 # ===========================
 
-def pseudo_legal_moves(game, color):
-    return pawn_moves(get_pawns(game.board, color), game, color)           | \
-           knight_moves(get_knights(game.board, color), game.board, color) | \
-           bishop_moves(get_bishops(game.board, color), game.board, color) | \
-           rook_moves(get_rooks(game.board, color), game.board, color)     | \
-           queen_moves(get_queen(game.board, color), game.board, color)    | \
-           king_moves(get_king(game.board, color), game.board, color)
-
 def is_attacked(target, board, color):
     return count_attacks(target, board, color) > 0
 
@@ -1054,44 +1046,45 @@ def win_score(color):
     if color == BLACK:
         return 10*PIECE_VALUES[KING]
     
-def pseudo_legal_moves_gen(game, color):
+def pseudo_legal_moves(game, color):
+    pseudo_legal_moves = []
     for pawn in colored_piece_gen(game.board, PAWN, color):
         for pawn_move in single_gen(pawn_moves(pawn, game, color)):
-            yield [pawn, pawn_move]
+            pseudo_legal_moves.append( (pawn, pawn_move) )
     for knight in colored_piece_gen(game.board, KNIGHT, color):
         for knight_move in single_gen(knight_moves(knight, game.board, color)):
-            yield [knight, knight_move]
+            pseudo_legal_moves.append( (knight, knight_move) )
     for bishop in colored_piece_gen(game.board, BISHOP, color):
         for bishop_move in single_gen(bishop_moves(bishop, game.board, color)):
-            yield [bishop, bishop_move]
+            pseudo_legal_moves.append( (bishop, bishop_move) )
     for rook in colored_piece_gen(game.board, ROOK, color):
         for rook_move in single_gen(rook_moves(rook, game.board, color)):
-            yield [rook, rook_move]
+            pseudo_legal_moves.append( (rook, rook_move) )
     for queen in colored_piece_gen(game.board, QUEEN, color):
         for queen_move in single_gen(queen_moves(queen, game.board, color)):
-            yield [queen, queen_move]
+            pseudo_legal_moves.append( (queen, queen_move) )
     for king in colored_piece_gen(game.board, KING, color):
         for king_move in single_gen(king_moves(king, game.board, color)):
-            yield [king, king_move]
+            pseudo_legal_moves.append( (king, king_move) )
         if can_castle_kingside(game, color):
-            yield [king, east_one(east_one(king))]
+            pseudo_legal_moves.append( (king, east_one(east_one(king))) )
         if can_castle_queenside(game, color):
-            yield [king, west_one(west_one(king))]
+            pseudo_legal_moves.append( (king, west_one(west_one(king))) )
+    return pseudo_legal_moves
 
-def legal_moves_gen(game, color):
-    for move in pseudo_legal_moves_gen(game, color):
+def legal_moves(game, color):
+    legal_moves = []
+    for move in pseudo_legal_moves(game, color):
         if is_legal_move(game, move):
-            yield move
+            legal_moves.append(move)
+    return legal_moves
 
 def is_legal_move(game, move):
     new_game = make_move(game, move)
     return not is_check(new_game.board, game.to_move)
     
 def count_legal_moves(game, color):
-    count = 0
-    for _ in legal_moves_gen(game, color):
-        count += 1
-    return count
+    return len(legal_moves(game, color))
 
 def is_checkmate(game, color):
     return is_check(game.board, color) and count_legal_moves(game, color) == 0 
@@ -1142,16 +1135,13 @@ def game_ended(game):
            is_under_75_move_rule(game)
 
 def random_move(game, color):
-    legal_moves = []
-    for move in legal_moves_gen(game, color):
-        legal_moves.append(move)
-    return choice(legal_moves)
+    return choice(legal_moves(game, color))
 
 def evaluated_move(game, color):
     best_score = win_score(color)
     best_moves = []
     
-    for move in legal_moves_gen(game, color):
+    for move in legal_moves(game, color):
         evaluation = evaluate_game(make_move(game, move))
         
         if is_checkmate(make_move(game, move), opposing_color(game.to_move)):
@@ -1176,7 +1166,7 @@ def minimax(game, color, depth=1):
     best_score = win_score(color)
     best_moves = []
     
-    for move in legal_moves_gen(game, color):
+    for move in legal_moves(game, color):
         his_game = make_move(game, move)
         
         if is_checkmate(his_game, his_game.to_move):
@@ -1206,7 +1196,7 @@ def alpha_beta(game, color, depth, alpha=-float('inf'), beta=float('inf')):
     best_moves = []
         
     if color == WHITE:
-        for move in legal_moves_gen(game, color):
+        for move in legal_moves(game, color):
             if verbose:
                 print('\t'*depth + str(depth) + '. evaluating ' + PIECE_CODES[get_piece(game.board, move[0])] + move2str(move))
                 
@@ -1234,7 +1224,7 @@ def alpha_beta(game, color, depth, alpha=-float('inf'), beta=float('inf')):
             return [None, alpha]
     
     if color == BLACK:
-        for move in legal_moves_gen(game, color):
+        for move in legal_moves(game, color):
             if verbose:
                 print('\t'*depth + str(depth) + '. evaluating ' + PIECE_CODES[get_piece(game.board, move[0])] + move2str(move))
                 
@@ -1300,7 +1290,7 @@ def parse_move_code(game, move_code):
             return False
     
     valid_moves = []
-    for move in legal_moves_gen(game, game.to_move):
+    for move in legal_moves(game, game.to_move):
         if move[1] & target_square and \
            move[0] & filter_squares and \
            get_piece(game.board, move[0])&PIECE_MASK == piece:
@@ -1429,7 +1419,7 @@ def get_book_move(game):
 
 # ========== TESTS ==========
 
-# for move in legal_moves_gen(test_game, test_game.to_move):
+# for move in legal_moves(test_game, test_game.to_move):
 #     new_pos = make_move(test_game, move).board
 #     print_board(new_pos)
 # test_game = Game('r3kbnr/ppp3pp/3pqp2/8/1n5P/1b2K1P1/PPPPPP2/RNBQ1BNR w kq - 0 1')

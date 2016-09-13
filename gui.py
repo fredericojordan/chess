@@ -142,7 +142,7 @@ def make_AI_move(game, color):
     return new_game
 
 def try_move(game, attempted_move):
-    for move in chess.legal_moves_gen(game, game.to_move):
+    for move in chess.legal_moves(game, game.to_move):
         if move == attempted_move:
             game = chess.make_move(game, move)
     return game
@@ -178,7 +178,7 @@ def play_as(game, color):
                     arriving_square = coord2str(event.pos, color)
                     
                     if ongoing and game.to_move == color:
-                        move = [chess.str2bb(leaving_square), chess.str2bb(arriving_square)]
+                        move = (chess.str2bb(leaving_square), chess.str2bb(arriving_square))
                         game = try_move(game, move)
                         print_board(game.board, color)
                 
