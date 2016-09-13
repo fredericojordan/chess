@@ -204,9 +204,9 @@ def play_as(game, color):
                         print_board(game.board, color)
                     if event.key == 112 or event.key == 100: # P or D key
                         print(game.get_move_list() + '\n')
-                        print('\n'.join(game.position_history) + '\n')
+                        print('\n'.join(game.position_history))
                     if event.key == 101: # E key
-                        print('eval = ' + str(chess.evaluate_game(game)/100) + '\n')
+                        print('eval = ' + str(chess.evaluate_game(game)/100))
                 
                 if event.type == pygame.VIDEORESIZE:
                     if SCREEN.get_height() != event.h:

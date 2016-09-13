@@ -76,6 +76,9 @@ ANTI_DIAG_H1A8 = 0x0102040810204080
 LIGHT_SQUARES  = 0x55AA55AA55AA55AA
 DARK_SQUARES   = 0xAA55AA55AA55AA55
 
+FILE_MASKS = [FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H]
+RANK_MASKS = [RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8]
+
 INITIAL_BOARD = [ WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KING, WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
                   WHITE|PAWN, WHITE|PAWN,   WHITE|PAWN,   WHITE|PAWN,  WHITE|PAWN, WHITE|PAWN,   WHITE|PAWN,   WHITE|PAWN, 
                   EMPTY,      EMPTY,        EMPTY,        EMPTY,       EMPTY,      EMPTY,        EMPTY,        EMPTY,
@@ -315,7 +318,7 @@ def piece_gen(board, piece_code):
 
 def colored_piece_gen(board, piece_code, color):
     for i in range(64):
-        if board[i]&(PIECE_MASK|COLOR_MASK) == piece_code|color:
+        if board[i] == piece_code|color:
             yield 0b1 << i
             
 def opposing_color(color):
@@ -325,7 +328,7 @@ def opposing_color(color):
         return WHITE
 
 def piece2str(piece):
-    return PIECE_CODES[ piece & (PIECE_MASK|COLOR_MASK) ]
+    return PIECE_CODES[piece]
 
 def str2piece(string):
     return PIECE_CODES[string]
@@ -376,10 +379,10 @@ def msb(bitboard):
             return bit
 
 def get_colored_pieces(board, color):
-    return list2int([ (i&COLOR_MASK == color and i&PIECE_MASK != EMPTY) for i in board ])
+    return list2int([ (i != EMPTY and i&COLOR_MASK == color) for i in board ])
 
 def empty_squares(board):
-    return list2int([ i&PIECE_MASK == EMPTY for i in board ])
+    return list2int([ i == EMPTY for i in board ])
 
 def occupied_squares(board):
     return nnot(empty_squares(board))
@@ -450,7 +453,7 @@ def make_move(game, move):
         new_game.fullmove_number += 1
     
     # reset clock if capture
-    if get_piece(new_game.board, arriving_position)&PIECE_MASK != EMPTY:
+    if get_piece(new_game.board, arriving_position) != EMPTY:
         new_game.halfmove_clock = 0
     
     # for pawns: reset clock, removed captured ep, set new ep, promote
@@ -481,7 +484,7 @@ def make_move(game, move):
         new_game.castling_rights = remove_castling_rights(new_game, CASTLE_KINGSIDE_BLACK)
     
     # castling
-    if get_piece(new_game.board, leaving_position)&(PIECE_MASK|COLOR_MASK) == WHITE|KING:
+    if get_piece(new_game.board, leaving_position) == WHITE|KING:
         new_game.castling_rights = remove_castling_rights(new_game, CASTLE_KINGSIDE_WHITE|CASTLE_QUEENSIDE_WHITE)
         if leaving_position == str2bb('e1'):
             if arriving_position == str2bb('g1'):
@@ -489,7 +492,7 @@ def make_move(game, move):
             if arriving_position == str2bb('c1'):
                 new_game.board = move_piece(new_game.board, [str2bb('a1'), str2bb('d1')])
         
-    if get_piece(new_game.board, leaving_position)&(PIECE_MASK|COLOR_MASK) == BLACK|KING:
+    if get_piece(new_game.board, leaving_position) == BLACK|KING:
         new_game.castling_rights = remove_castling_rights(new_game, CASTLE_KINGSIDE_BLACK|CASTLE_QUEENSIDE_BLACK)
         if leaving_position == str2bb('e8'):
             if arriving_position == str2bb('g8'):
@@ -517,41 +520,12 @@ def unmake_move(game):
 
 def get_rank(rank_num):
     rank_num = int(rank_num)
-    if rank_num == 1:
-        return RANK_1
-    if rank_num == 2:
-        return RANK_2
-    if rank_num == 3:
-        return RANK_3
-    if rank_num == 4:
-        return RANK_4
-    if rank_num == 5:
-        return RANK_5
-    if rank_num == 6:
-        return RANK_6
-    if rank_num == 7:
-        return RANK_7
-    if rank_num == 8:
-        return RANK_8
-    
-def get_file(fille):
-    fille = fille.lower()
-    if fille == 'a':
-        return FILE_A
-    if fille == 'b':
-        return FILE_B
-    if fille == 'c':
-        return FILE_C
-    if fille == 'd':
-        return FILE_D
-    if fille == 'e':
-        return FILE_E
-    if fille == 'f':
-        return FILE_F
-    if fille == 'g':
-        return FILE_G
-    if fille == 'h':
-        return FILE_H
+    return RANK_MASKS[rank_num]
+     
+def get_file(file_str):
+    file_str = file_str.lower()
+    file_num = FILES.index(file_str)
+    return FILE_MASKS[file_num]
     
 def get_filter(filter_str):
     if filter_str in FILES:
@@ -565,7 +539,7 @@ def get_all_pawns(board):
     return list2int([ i&PIECE_MASK == PAWN for i in board ])
 
 def get_pawns(board, color):
-    return list2int([ i&(COLOR_MASK|PIECE_MASK) == color|PAWN for i in board ])
+    return list2int([ i == color|PAWN for i in board ])
 
 def pawn_moves(moving_piece, game, color):
     return pawn_pushes(moving_piece, game.board, color) | pawn_captures(moving_piece, game, color)
@@ -637,7 +611,7 @@ def remove_captured_ep(game):
 # ========== KNIGHT ==========
 
 def get_knights(board, color):
-    return list2int([ i&(COLOR_MASK|PIECE_MASK) == color|KNIGHT for i in board ])
+    return list2int([ i == color|KNIGHT for i in board ])
 
 def knight_moves(moving_piece, board, color):
     return knight_attacks(moving_piece) & nnot(get_colored_pieces(board, color))
@@ -695,7 +669,7 @@ def knight_distance(pos1, pos2):
 # ========== KING ==========
 
 def get_king(board, color):
-    return list2int([ i&(COLOR_MASK|PIECE_MASK) == color|KING for i in board ])
+    return list2int([ i == color|KING for i in board ])
 
 def king_moves(moving_piece, board, color):
     return king_attacks(moving_piece) & nnot(get_colored_pieces(board, color))
@@ -757,7 +731,7 @@ def remove_castling_rights(game, removed_rights):
 # ========== BISHOP ==========
 
 def get_bishops(board, color):
-    return list2int([ i&(COLOR_MASK|PIECE_MASK) == color|BISHOP for i in board ])
+    return list2int([ i == color|BISHOP for i in board ])
 
 def bishop_rays(moving_piece):
     return diagonal_rays(moving_piece) | anti_diagonal_rays(moving_piece)
@@ -838,7 +812,7 @@ def bishop_moves(moving_piece, board, color):
 # ========== ROOK ==========
 
 def get_rooks(board, color):
-    return list2int([ i&(COLOR_MASK|PIECE_MASK) == color|ROOK for i in board ])
+    return list2int([ i == color|ROOK for i in board ])
 
 def rook_rays(moving_piece):
     return rank_rays(moving_piece) | file_rays(moving_piece)
@@ -919,7 +893,7 @@ def rook_moves(moving_piece, board, color):
 # ========== QUEEN ==========
 
 def get_queen(board, color):
-    return list2int([ i&(COLOR_MASK|PIECE_MASK) == color|QUEEN for i in board ])
+    return list2int([ i == color|QUEEN for i in board ])
 
 def queen_rays(moving_piece):
     return rook_rays(moving_piece) | bishop_rays(moving_piece)
@@ -932,32 +906,39 @@ def queen_moves(moving_piece, board, color):
 
 # ===========================
 
-def is_attacked(target, board, color):
-    return count_attacks(target, board, color) > 0
+def is_attacked(target, board, attacking_color):
+    return count_attacks(target, board, attacking_color) > 0
 
 def is_check(board, color):
     return is_attacked(get_king(board, color), board, opposing_color(color))
 
 def count_attacks(target, board, attacking_color):
     attack_count = 0
-    for pawn in colored_piece_gen(board, PAWN, attacking_color):
-        if pawn_attacks(pawn, board, attacking_color)&target:
-            attack_count += 1
-    for knight in colored_piece_gen(board, KNIGHT, attacking_color):
-        if knight_attacks(knight)&target:
-            attack_count += 1
-    for bishop in colored_piece_gen(board, BISHOP, attacking_color):
-        if bishop_attacks(bishop, board, attacking_color)&target:
-            attack_count += 1
-    for rook in colored_piece_gen(board, ROOK, attacking_color):
-        if rook_attacks(rook, board, attacking_color)&target:
-            attack_count += 1
-    for queen in colored_piece_gen(board, QUEEN, attacking_color):
-        if queen_attacks(queen, board, attacking_color)&target:
-            attack_count += 1
-    for king in colored_piece_gen(board, KING, attacking_color):
-        if king_attacks(king)&target:
-            attack_count += 1
+      
+    for index in range(64):
+        piece = board[index]
+        if piece != EMPTY and piece&COLOR_MASK == attacking_color:
+            pos = 0b1 << index
+              
+            if piece&PIECE_MASK == PAWN:
+                if pawn_attacks(pos, board, attacking_color)&target:
+                    attack_count += 1
+            elif piece&PIECE_MASK == KNIGHT:
+                if knight_attacks(pos)&target:
+                    attack_count += 1
+            elif piece&PIECE_MASK == BISHOP:
+                if bishop_attacks(pos, board, attacking_color)&target:
+                    attack_count += 1
+            elif piece&PIECE_MASK == ROOK:
+                if rook_attacks(pos, board, attacking_color)&target:
+                    attack_count += 1
+            elif piece&PIECE_MASK == QUEEN:
+                if queen_attacks(pos, board, attacking_color)&target:
+                    attack_count += 1
+            elif piece&PIECE_MASK == KING:
+                if king_attacks(pos)&target:
+                    attack_count += 1
+                      
     return attack_count
 
 def material_sum(board, color):
@@ -1053,52 +1034,59 @@ def win_score(color):
         return -10*PIECE_VALUES[KING]
     if color == BLACK:
         return 10*PIECE_VALUES[KING]
-    
+
 def pseudo_legal_moves(game, color):
-    pseudo_legal_moves = []
-    for pawn in colored_piece_gen(game.board, PAWN, color):
-        for pawn_move in single_gen(pawn_moves(pawn, game, color)):
-            pseudo_legal_moves.append( (pawn, pawn_move) )
-    for knight in colored_piece_gen(game.board, KNIGHT, color):
-        for knight_move in single_gen(knight_moves(knight, game.board, color)):
-            pseudo_legal_moves.append( (knight, knight_move) )
-    for bishop in colored_piece_gen(game.board, BISHOP, color):
-        for bishop_move in single_gen(bishop_moves(bishop, game.board, color)):
-            pseudo_legal_moves.append( (bishop, bishop_move) )
-    for rook in colored_piece_gen(game.board, ROOK, color):
-        for rook_move in single_gen(rook_moves(rook, game.board, color)):
-            pseudo_legal_moves.append( (rook, rook_move) )
-    for queen in colored_piece_gen(game.board, QUEEN, color):
-        for queen_move in single_gen(queen_moves(queen, game.board, color)):
-            pseudo_legal_moves.append( (queen, queen_move) )
-    for king in colored_piece_gen(game.board, KING, color):
-        for king_move in single_gen(king_moves(king, game.board, color)):
-            pseudo_legal_moves.append( (king, king_move) )
-        if can_castle_kingside(game, color):
-            pseudo_legal_moves.append( (king, east_one(east_one(king))) )
-        if can_castle_queenside(game, color):
-            pseudo_legal_moves.append( (king, west_one(west_one(king))) )
-    return pseudo_legal_moves
+    for index in range(64):
+        piece = game.board[index]
+        
+        if piece != EMPTY and piece&COLOR_MASK == color:
+            pos = 0b1 << index
+              
+            if piece&PIECE_MASK == PAWN:
+                for pawn_move in single_gen(pawn_moves(pos, game, color)):
+                    yield (pos, pawn_move)
+            elif piece&PIECE_MASK == KNIGHT:
+                for knight_move in single_gen(knight_moves(pos, game.board, color)):
+                    yield (pos, knight_move)
+            elif piece&PIECE_MASK == BISHOP:
+                for bishop_move in single_gen(bishop_moves(pos, game.board, color)):
+                    yield (pos, bishop_move)
+            elif piece&PIECE_MASK == ROOK:
+                for rook_move in single_gen(rook_moves(pos, game.board, color)):
+                    yield (pos, rook_move)
+            elif piece&PIECE_MASK == QUEEN:
+                for queen_move in single_gen(queen_moves(pos, game.board, color)):
+                    yield (pos, queen_move)
+            elif piece&PIECE_MASK == KING:
+                for king_move in single_gen(king_moves(pos, game.board, color)):
+                    yield (pos, king_move)
+                if can_castle_kingside(game, color):
+                    yield (pos, east_one(east_one(pos)))
+                if can_castle_queenside(game, color):
+                    yield (pos, west_one(west_one(pos)))
 
 def legal_moves(game, color):
-    legal_moves = []
     for move in pseudo_legal_moves(game, color):
         if is_legal_move(game, move):
-            legal_moves.append(move)
-    return legal_moves
+            yield move
 
 def is_legal_move(game, move):
     new_game = make_move(game, move)
     return not is_check(new_game.board, game.to_move)
     
 def count_legal_moves(game, color):
-    return len(legal_moves(game, color))
-
-def is_checkmate(game, color):
-    return is_check(game.board, color) and count_legal_moves(game, color) == 0 
+    move_count = 0
+    for _ in legal_moves(game, color):
+        move_count += 1
+    return move_count
 
 def is_stalemate(game):
-    return count_legal_moves(game, game.to_move) == 0 and not is_check(game.board, game.to_move)
+    for _ in legal_moves(game, game.to_move):
+        return False
+    return not is_check(game.board, game.to_move)
+  
+def is_checkmate(game, color):
+    return is_check(game.board, color) and count_legal_moves(game, color) == 0  
 
 def is_same_position(FEN_a, FEN_b):
     FEN_a_list = FEN_a.split(' ')
