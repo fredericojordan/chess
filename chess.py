@@ -603,9 +603,9 @@ def new_ep_square(leaving_square):
 def remove_captured_ep(game):
     new_board = deepcopy(game.board)
     if game.ep_square & RANK_3:
-        new_board[bb2index(south_one(game.ep_square))] = EMPTY
-    if game.ep_square & RANK_6:
         new_board[bb2index(north_one(game.ep_square))] = EMPTY
+    if game.ep_square & RANK_6:
+        new_board[bb2index(south_one(game.ep_square))] = EMPTY
     return new_board
 
 # ========== KNIGHT ==========
