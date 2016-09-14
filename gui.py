@@ -11,7 +11,7 @@ from time import strftime
 from copy import deepcopy
 pygame.init()
 
-SQUARE_SIDE = 50
+SQUARE_SIDE = 10
 AI_SEARCH_DEPTH = 2
 
 RED_CHECK          = (240, 150, 150)
@@ -21,9 +21,9 @@ BLUE_DARK          = (91,  131, 159)
 GRAY_LIGHT         = (240, 240, 240)
 GRAY_DARK          = (200, 200, 200)
 CHESSWEBSITE_LIGHT = (212, 202, 190)
-CHESSWEBSITE_DARK  = (100, 92,  89)
+CHESSWEBSITE_DARK  = (100,  92,  89)
 LICHESS_LIGHT      = (240, 217, 181)
-LICHESS_DARK       = (181, 136, 99)
+LICHESS_DARK       = (181, 136,  99)
 LICHESS_GRAY_LIGHT = (164, 164, 164)
 LICHESS_GRAY_DARK  = (136, 136, 136)
 
@@ -41,6 +41,7 @@ BLACK_ROOK   = pygame.image.load('images/black_rook.png')
 BLACK_BISHOP = pygame.image.load('images/black_bishop.png')
 BLACK_KNIGHT = pygame.image.load('images/black_knight.png')
 BLACK_PAWN   = pygame.image.load('images/black_pawn.png')
+BLACK_JOKER  = pygame.image.load('images/black_joker.png')
 
 WHITE_KING   = pygame.image.load('images/white_king.png')
 WHITE_QUEEN  = pygame.image.load('images/white_queen.png')
@@ -48,6 +49,7 @@ WHITE_ROOK   = pygame.image.load('images/white_rook.png')
 WHITE_BISHOP = pygame.image.load('images/white_bishop.png')
 WHITE_KNIGHT = pygame.image.load('images/white_knight.png')
 WHITE_PAWN   = pygame.image.load('images/white_pawn.png')
+WHITE_JOKER  = pygame.image.load('images/white_joker.png')
 
 CLOCK = pygame.time.Clock()
 CLOCK_TICK = 15
@@ -117,6 +119,8 @@ def print_board(board, color=chess.WHITE):
         SCREEN.blit(pygame.transform.scale(BLACK_KNIGHT, (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
     for position in chess.colored_piece_gen(printed_board, chess.PAWN, chess.BLACK):
         SCREEN.blit(pygame.transform.scale(BLACK_PAWN,   (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(printed_board, chess.JOKER, chess.BLACK):
+        SCREEN.blit(pygame.transform.scale(BLACK_JOKER,  (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
         
     for position in chess.colored_piece_gen(printed_board, chess.KING, chess.WHITE):
         SCREEN.blit(pygame.transform.scale(WHITE_KING,   (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
@@ -130,6 +134,8 @@ def print_board(board, color=chess.WHITE):
         SCREEN.blit(pygame.transform.scale(WHITE_KNIGHT, (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
     for position in chess.colored_piece_gen(printed_board, chess.PAWN, chess.WHITE):
         SCREEN.blit(pygame.transform.scale(WHITE_PAWN,   (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
+    for position in chess.colored_piece_gen(printed_board, chess.JOKER, chess.WHITE):
+        SCREEN.blit(pygame.transform.scale(WHITE_JOKER,  (SQUARE_SIDE,SQUARE_SIDE)), get_square_rect(chess.bb2str(position)))
         
     pygame.display.flip()
     
@@ -153,6 +159,7 @@ def try_move(game, attempted_move):
 def play_as(game, color):
     run = True
     ongoing = True
+    joker = 0
     
     try:
         while run:
@@ -207,6 +214,12 @@ def play_as(game, color):
                         print('\n'.join(game.position_history))
                     if event.key == 101: # E key
                         print('eval = ' + str(chess.evaluate_game(game)/100))
+                    if event.key == 106: # J key
+                        joker += 1
+                        if joker == 13 and chess.get_queen(game.board, color):
+                            queen_index = chess.bb2index(chess.get_queen(game.board, color))
+                            game.board[queen_index] = color|chess.JOKER
+                            print_board(game.board, color)
                 
                 if event.type == pygame.VIDEORESIZE:
                     if SCREEN.get_height() != event.h:

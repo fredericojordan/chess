@@ -40,9 +40,10 @@ BISHOP = 3
 ROOK   = 4
 QUEEN  = 5
 KING   = 6
+JOKER  = 7
 
-PIECE_TYPES = [ PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING ]
-PIECE_VALUES = { EMPTY:0, PAWN:100, KNIGHT:300, BISHOP:300, ROOK:500, QUEEN:900, KING:42000 }
+PIECE_TYPES = [ PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, JOKER ]
+PIECE_VALUES = { EMPTY:0, PAWN:100, KNIGHT:300, BISHOP:300, ROOK:500, QUEEN:900, JOKER:1300, KING:42000 }
 
 FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 RANKS = ['1', '2', '3', '4', '5', '6', '7', '8']
@@ -99,12 +100,14 @@ PIECE_CODES = { WHITE|KING:  'K',
                 WHITE|BISHOP:'B',
                 WHITE|KNIGHT:'N',
                 WHITE|PAWN:  'P',
+                WHITE|JOKER: 'J',
                 BLACK|KING:  'k',
                 BLACK|QUEEN: 'q',
                 BLACK|ROOK:  'r',
                 BLACK|BISHOP:'b',
                 BLACK|KNIGHT:'n',
                 BLACK|PAWN:  'p',
+                BLACK|JOKER: 'j',
                 EMPTY:       '.' }
 PIECE_CODES.update({v: k for k, v in PIECE_CODES.items()})
 
@@ -904,6 +907,17 @@ def queen_attacks(moving_piece, board, color):
 def queen_moves(moving_piece, board, color):
     return bishop_moves(moving_piece, board, color) | rook_moves(moving_piece, board, color)
 
+# ========== JOKER ==========
+
+def joker_rays(moving_piece):
+    return queen_rays(moving_piece)
+
+def joker_attacks(moving_piece, board, color):
+    return queen_attacks(moving_piece, board, color) | knight_attacks(moving_piece)
+
+def joker_moves(moving_piece, board, color):
+    return queen_moves(moving_piece, board, color) | knight_moves(moving_piece, board, color)
+
 # ===========================
 
 def is_attacked(target, board, attacking_color):
@@ -912,6 +926,42 @@ def is_attacked(target, board, attacking_color):
 def is_check(board, color):
     return is_attacked(get_king(board, color), board, opposing_color(color))
 
+def get_attacks(moving_piece, board, color):
+    piece = board[bb2index(moving_piece)]
+    
+    if piece&PIECE_MASK == PAWN:
+        return pawn_attacks(moving_piece, board, color)
+    elif piece&PIECE_MASK == KNIGHT:
+        return knight_attacks(moving_piece)
+    elif piece&PIECE_MASK == BISHOP:
+        return bishop_attacks(moving_piece, board, color)
+    elif piece&PIECE_MASK == ROOK:
+        return rook_attacks(moving_piece, board, color)
+    elif piece&PIECE_MASK == QUEEN:
+        return queen_attacks(moving_piece, board, color)
+    elif piece&PIECE_MASK == KING:
+        return king_attacks(moving_piece)
+    elif piece&PIECE_MASK == JOKER:
+        return joker_attacks(moving_piece, board, color)
+
+def get_moves(moving_piece, game, color):
+    piece = game.board[bb2index(moving_piece)]
+    
+    if piece&PIECE_MASK == PAWN:
+        return pawn_moves(moving_piece, game, color)
+    elif piece&PIECE_MASK == KNIGHT:
+        return knight_moves(moving_piece, game.board, color)
+    elif piece&PIECE_MASK == BISHOP:
+        return bishop_moves(moving_piece, game.board, color)
+    elif piece&PIECE_MASK == ROOK:
+        return rook_moves(moving_piece, game.board, color)
+    elif piece&PIECE_MASK == QUEEN:
+        return queen_moves(moving_piece, game.board, color)
+    elif piece&PIECE_MASK == KING:
+        return king_moves(moving_piece, game.board, color)
+    elif piece&PIECE_MASK == JOKER:
+        return joker_moves(moving_piece, game.board, color)
+
 def count_attacks(target, board, attacking_color):
     attack_count = 0
       
@@ -919,25 +969,9 @@ def count_attacks(target, board, attacking_color):
         piece = board[index]
         if piece != EMPTY and piece&COLOR_MASK == attacking_color:
             pos = 0b1 << index
-              
-            if piece&PIECE_MASK == PAWN:
-                if pawn_attacks(pos, board, attacking_color)&target:
-                    attack_count += 1
-            elif piece&PIECE_MASK == KNIGHT:
-                if knight_attacks(pos)&target:
-                    attack_count += 1
-            elif piece&PIECE_MASK == BISHOP:
-                if bishop_attacks(pos, board, attacking_color)&target:
-                    attack_count += 1
-            elif piece&PIECE_MASK == ROOK:
-                if rook_attacks(pos, board, attacking_color)&target:
-                    attack_count += 1
-            elif piece&PIECE_MASK == QUEEN:
-                if queen_attacks(pos, board, attacking_color)&target:
-                    attack_count += 1
-            elif piece&PIECE_MASK == KING:
-                if king_attacks(pos)&target:
-                    attack_count += 1
+            
+            if get_attacks(pos, board, attacking_color) & target:
+                attack_count += 1
                       
     return attack_count
 
@@ -1040,30 +1074,15 @@ def pseudo_legal_moves(game, color):
         piece = game.board[index]
         
         if piece != EMPTY and piece&COLOR_MASK == color:
-            pos = 0b1 << index
-              
-            if piece&PIECE_MASK == PAWN:
-                for pawn_move in single_gen(pawn_moves(pos, game, color)):
-                    yield (pos, pawn_move)
-            elif piece&PIECE_MASK == KNIGHT:
-                for knight_move in single_gen(knight_moves(pos, game.board, color)):
-                    yield (pos, knight_move)
-            elif piece&PIECE_MASK == BISHOP:
-                for bishop_move in single_gen(bishop_moves(pos, game.board, color)):
-                    yield (pos, bishop_move)
-            elif piece&PIECE_MASK == ROOK:
-                for rook_move in single_gen(rook_moves(pos, game.board, color)):
-                    yield (pos, rook_move)
-            elif piece&PIECE_MASK == QUEEN:
-                for queen_move in single_gen(queen_moves(pos, game.board, color)):
-                    yield (pos, queen_move)
-            elif piece&PIECE_MASK == KING:
-                for king_move in single_gen(king_moves(pos, game.board, color)):
-                    yield (pos, king_move)
-                if can_castle_kingside(game, color):
-                    yield (pos, east_one(east_one(pos)))
-                if can_castle_queenside(game, color):
-                    yield (pos, west_one(west_one(pos)))
+            piece_pos = 0b1 << index
+            
+            for target in single_gen(get_moves(piece_pos, game, color)):
+                yield (piece_pos, target)
+                
+    if can_castle_kingside(game, color):
+        yield (get_king(game.board, color), east_one(east_one(get_king(game.board, color))))
+    if can_castle_queenside(game, color):
+        yield (get_king(game.board, color), west_one(west_one(get_king(game.board, color))))
 
 def legal_moves(game, color):
     for move in pseudo_legal_moves(game, color):
@@ -1086,7 +1105,9 @@ def is_stalemate(game):
     return not is_check(game.board, game.to_move)
   
 def is_checkmate(game, color):
-    return is_check(game.board, color) and count_legal_moves(game, color) == 0  
+    for _ in legal_moves(game, game.to_move):
+        return False
+    return is_check(game.board, color)  
 
 def is_same_position(FEN_a, FEN_b):
     FEN_a_list = FEN_a.split(' ')
