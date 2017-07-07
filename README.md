@@ -1,4 +1,6 @@
 # chess
+This code has been left aside and is currently outdated. For a more complete and faster program, please refer to [fast-chess](https://github.com/fredericojordan/fast-chess).
+
 Simple chess game being developed purely in python. GUI uses [pygame](http://www.pygame.org/) library.
 
 Using some ideas from [Chess Programming Wiki](http://chessprogramming.wikispaces.com).
